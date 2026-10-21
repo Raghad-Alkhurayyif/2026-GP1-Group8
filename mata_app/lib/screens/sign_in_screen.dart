@@ -96,10 +96,12 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           ),
           Positioned(
-            top: screenSize.height * 0.035,
-            right: 0,
+            top: screenSize.height * 0.06,
+            //right: 0,
+            right: 40,
             child: SizedBox(
-              width: screenSize.width,
+              // width: screenSize.width,
+              width: 370,
               child: Image.asset(
                 'assets/images/mata_logo.png',
                 fit: BoxFit.fitWidth,
