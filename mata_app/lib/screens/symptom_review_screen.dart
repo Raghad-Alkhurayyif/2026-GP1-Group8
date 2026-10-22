@@ -5,20 +5,20 @@ import '../widgets/sos_button.dart';
 
 class SymptomReviewScreen extends StatefulWidget {
   const SymptomReviewScreen({
-  super.key,
-  required this.originalDescription,
-  required this.extractionResult,
-  required this.followUpAnswers,
-  required this.currentStep,
-  required this.totalSteps,
-  required this.onContinue,
-  required this.onEditDescription,
-});
+    super.key,
+    required this.originalDescription,
+    required this.extractionResult,
+    required this.followUpAnswers,
+    required this.currentStep,
+    required this.totalSteps,
+    required this.onContinue,
+    required this.onEditDescription,
+  });
   final String originalDescription;
   final Map<String, dynamic> extractionResult;
   final Map<String, dynamic> followUpAnswers;
-final int currentStep;
-final int totalSteps;
+  final int currentStep;
+  final int totalSteps;
 
   final ValueChanged<Map<String, dynamic>> onContinue;
   final VoidCallback onEditDescription;
@@ -92,7 +92,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
             column: column,
             displayName: _formatColumnName(column),
             matchedText: item['matched_text']?.toString(),
-            layer: 'clarification',
+            layer: 'confirmation',
           ),
         );
 
@@ -215,7 +215,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
 
         negated.add({
           'column': column,
-          'matched_text': null,
+          'matched_text': item['matched_text']?.toString(),
           'layer': 'confirmation',
           'display': _formatColumnName(column),
         });
@@ -335,48 +335,41 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     );
   }
 
- Widget _buildProgressIndicator() {
-  final progressSegments = <Widget>[];
+  Widget _buildProgressIndicator() {
+    final progressSegments = <Widget>[];
 
-  for (
-    var step = 1;
-    step <= widget.totalSteps;
-    step++
-  ) {
-    if (progressSegments.isNotEmpty) {
+    for (var step = 1; step <= widget.totalSteps; step++) {
+      if (progressSegments.isNotEmpty) {
+        progressSegments.add(const SizedBox(width: 7));
+      }
+
       progressSegments.add(
-        const SizedBox(width: 7),
+        Expanded(
+          child: _progressLine(
+            color: step <= widget.currentStep ? brown : const Color(0xFFE7E1DA),
+          ),
+        ),
       );
     }
 
-    progressSegments.add(
-      Expanded(
-        child: _progressLine(
-          color: step <= widget.currentStep
-              ? brown
-              : const Color(0xFFE7E1DA),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: progressSegments),
+        const SizedBox(height: 7),
+        Text(
+          'Step ${widget.currentStep} '
+          'of ${widget.totalSteps}',
+          style: GoogleFonts.reemKufi(
+            color: brown,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(children: progressSegments),
-      const SizedBox(height: 7),
-      Text(
-        'Step ${widget.currentStep} '
-        'of ${widget.totalSteps}',
-        style: GoogleFonts.reemKufi(
-          color: brown,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    ],
-  );
-}
   Widget _progressLine({required Color color}) {
     return Container(
       height: 9,

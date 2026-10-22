@@ -7,6 +7,7 @@ import '../widgets/sos_button.dart';
 import 'account_screen.dart';
 import 'follow_up_questions_screen.dart';
 import 'symptom_review_screen.dart';
+import '../services/assessment_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,7 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color hintColor = Color(0xFF929292);
 
   final TextEditingController _symptomsController = TextEditingController();
+  final AssessmentService _assessmentService = AssessmentService();
 
+  bool _isSubmitting = false;
   bool _showError = false;
 
   @override
@@ -32,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _submitSymptoms() {
+  Future<void> _submitSymptoms() async {
     FocusScope.of(context).unfocus();
 
     final description = _symptomsController.text.trim();
@@ -43,16 +46,48 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       return;
     }
-
     setState(() {
       _showError = false;
+      _isSubmitting = true;
     });
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AnalyzingScreen(description: description),
-      ),
-    );
+    try {
+      final submissionId = await _assessmentService.createSymptomSubmission(
+        description: description,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AnalyzingScreen(
+            description: description,
+            submissionId: submissionId,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'The symptom description could not be saved. '
+            'Please try again.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -177,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: 130,
                             height: 44,
                             child: ElevatedButton(
-                              onPressed: _submitSymptoms,
+                              onPressed: _isSubmitting ? null : _submitSymptoms,
                               style: ElevatedButton.styleFrom(
                                 elevation: 5,
                                 backgroundColor: darkBrown,
@@ -186,13 +221,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(15),
                                 ),
                               ),
-                              child: Text(
-                                'Submit',
-                                style: GoogleFonts.reemKufi(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        color: inputBackground,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Submit',
+                                      style: GoogleFonts.reemKufi(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -267,9 +311,14 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class AnalyzingScreen extends StatefulWidget {
-  const AnalyzingScreen({super.key, required this.description});
+  const AnalyzingScreen({
+    super.key,
+    required this.description,
+    required this.submissionId,
+  });
 
   final String description;
+  final String submissionId;
 
   @override
   State<AnalyzingScreen> createState() => _AnalyzingScreenState();
@@ -282,6 +331,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   static const Color red = Color(0xFFB71616);
 
   final SymptomApiService _apiService = SymptomApiService();
+  final AssessmentService _assessmentService = AssessmentService();
 
   String? _errorMessage;
 
@@ -303,6 +353,14 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         return;
       }
       if (!_hasRecognizedSymptoms(result)) {
+        await _assessmentService.failSymptomSubmission(
+          submissionId: widget.submissionId,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
         setState(() {
           _errorMessage =
               'We couldn’t identify any symptoms. '
@@ -328,17 +386,61 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
               onEditDescription: () {
                 Navigator.of(reviewContext).popUntil((route) => route.isFirst);
               },
-              onContinue: (confirmedResult) {
-                debugPrint('Confirmed symptoms: $confirmedResult');
+              onContinue: (confirmedResult) async {
+                try {
+                  final isForCurrentUser =
+                      followUpAnswers['confirm_subject'] != false;
 
-                ScaffoldMessenger.of(reviewContext).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Symptoms confirmed.',
-                      style: GoogleFonts.reemKufi(),
+                  final int subjectAge;
+
+                  if (isForCurrentUser) {
+                    subjectAge = await _assessmentService.getCurrentUserAge();
+                  } else {
+                    final savedAge = followUpAnswers['subject_age'];
+
+                    if (savedAge is! int) {
+                      throw StateError(
+                        'The assessed person age was not found.',
+                      );
+                    }
+
+                    subjectAge = savedAge;
+                  }
+
+                  await _assessmentService.completeSymptomSubmission(
+                    submissionId: widget.submissionId,
+                    symptoms: confirmedResult['symptoms'] as List? ?? [],
+                    negatedSymptoms: confirmedResult['negated'] as List? ?? [],
+                    isForCurrentUser: isForCurrentUser,
+                    subjectAge: subjectAge,
+                  );
+
+                  if (!reviewContext.mounted) {
+                    return;
+                  }
+
+                  ScaffoldMessenger.of(reviewContext).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Symptoms confirmed.',
+                        style: GoogleFonts.reemKufi(),
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } catch (_) {
+                  if (!reviewContext.mounted) {
+                    return;
+                  }
+
+                  ScaffoldMessenger.of(reviewContext).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'The symptoms could not be saved. Please try again.',
+                        style: GoogleFonts.reemKufi(),
+                      ),
+                    ),
+                  );
+                }
               },
             );
           },
@@ -369,6 +471,12 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         );
       }
     } catch (_) {
+      try {
+        await _assessmentService.failSymptomSubmission(
+          submissionId: widget.submissionId,
+        );
+      } catch (_) {}
+
       if (!mounted) {
         return;
       }
