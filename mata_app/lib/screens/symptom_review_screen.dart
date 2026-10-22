@@ -34,12 +34,59 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
   static const Color borderColor = Color(0xFFDCCDB5);
 
   late final List<_ReviewedSymptom> _symptoms;
+  late final List<_ReviewedSymptom> _deniedSymptoms;
+  late final List<_ReviewedSymptom> _conflictingSymptoms;
+
+// true = user confirms the symptom is present
+// false = user confirms the symptom is absent
+// null/missing = user has not answered yet
+  final Map<String, bool> _decisions = {};
+
+  bool get _allReviewed {
+    final all = [
+      ..._symptoms,
+      ..._deniedSymptoms,
+      ..._conflictingSymptoms,
+    ];
+    return all.every(
+          (symptom) => _decisions.containsKey(symptom.column),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
 
     _symptoms = _buildReviewedSymptoms();
+    _deniedSymptoms = _buildDeniedSymptoms();
+
+    final positiveColumns = _symptoms.map((s) => s.column).toSet();
+
+    final negativeColumns = <String>{};
+
+    final originalNegated = widget.extractionResult['negated'];
+
+    if (originalNegated is List) {
+      for (final item in originalNegated) {
+        if (item is Map && item['column'] != null) {
+          negativeColumns.add(item['column'].toString());
+        }
+      }
+    }
+
+    final conflicts = positiveColumns.intersection(negativeColumns);
+
+    _conflictingSymptoms = _symptoms
+        .where((s) => conflicts.contains(s.column))
+        .toList();
+
+    _symptoms.removeWhere(
+          (s) => conflicts.contains(s.column),
+    );
+
+    _deniedSymptoms.removeWhere(
+          (s) => conflicts.contains(s.column),
+    );
   }
 
   List<_ReviewedSymptom> _buildReviewedSymptoms() {
@@ -129,6 +176,75 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     return symptoms;
   }
 
+
+  List<_ReviewedSymptom> _buildDeniedSymptoms() {
+    final denied = <_ReviewedSymptom>[];
+
+    // Might contains contradictory positive and negative findings.
+    final seenColumns = <String>{};
+
+    void addDenied({
+      required String column,
+      String? matchedText,
+      String? layer,
+      String? displayName,
+    }) {
+      if (column.isEmpty || seenColumns.contains(column)) {
+        return;
+      }
+
+      denied.add(
+        _ReviewedSymptom(
+          column: column,
+          displayName: displayName ?? _formatColumnName(column),
+          matchedText: matchedText,
+          layer: layer,
+        ),
+      );
+
+      seenColumns.add(column);
+    }
+
+    // Findings explicitly negated by the NLP pipeline.
+    final extractedNegated = widget.extractionResult['negated'];
+
+    if (extractedNegated is List) {
+      for (final item in extractedNegated) {
+        if (item is! Map) continue;
+
+        final column = item['column']?.toString() ?? '';
+
+        addDenied(
+          column: column,
+          matchedText: item['matched_text']?.toString(),
+          layer: item['layer']?.toString(),
+          displayName: _displayNameFromItem(item, column),
+        );
+      }
+    }
+
+    // Findings rejected during the preceding follow-up screen.
+    final confirmationAnswers =
+    widget.followUpAnswers['confirmations'];
+
+    if (confirmationAnswers is List) {
+      for (final item in confirmationAnswers) {
+        if (item is! Map || item['confirmed'] != false) {
+          continue;
+        }
+
+        addDenied(
+          column: item['column']?.toString() ?? '',
+          matchedText: item['matched_text']?.toString(),
+          layer: 'confirmation',
+        );
+      }
+    }
+
+    return denied;
+  }
+
+
   String _displayNameFromItem(Map<dynamic, dynamic> item, String fallback) {
     final display = item['display'];
 
@@ -149,82 +265,67 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     return cleaned[0].toUpperCase() + cleaned.substring(1);
   }
 
-  void _removeSymptom(int index) {
-    setState(() {
-      _symptoms.removeAt(index);
-    });
-  }
+
 
   void _continue() {
-    if (_symptoms.isEmpty) {
-      return;
+    if (!_allReviewed) return;
+
+    final allSymptoms = [
+      ..._symptoms,
+      ..._deniedSymptoms,
+      ..._conflictingSymptoms,
+    ];
+
+    Map<String, dynamic> toJson(
+        _ReviewedSymptom symptom,
+        bool confirmedPresent,
+        ) {
+      return {
+        'column': symptom.column,
+        'matched_text': symptom.matchedText,
+        'layer': symptom.layer,
+        'display': symptom.displayName,
+        'user_confirmed': true,
+        'confirmed_present': confirmedPresent,
+      };
     }
 
-    final updatedResult = Map<String, dynamic>.from(widget.extractionResult);
+    final confirmedPresent = <Map<String, dynamic>>[];
+    final confirmedAbsent = <Map<String, dynamic>>[];
 
-    updatedResult['symptoms'] = _symptoms
-        .map(
-          (symptom) => {
-            'column': symptom.column,
-            'matched_text': symptom.matchedText,
-            'layer': symptom.layer,
-            'display': symptom.displayName,
-          },
-        )
-        .toList();
+    for (final symptom in allSymptoms) {
+      final present = _decisions[symptom.column]!;
 
-    updatedResult['negated'] = _buildUpdatedNegatedSymptoms();
-
-    updatedResult['follow_up_answers'] = widget.followUpAnswers;
-
-    updatedResult['original_description'] = widget.originalDescription;
-
-    widget.onContinue(updatedResult);
-  }
-
-  List<dynamic> _buildUpdatedNegatedSymptoms() {
-    final negated = <dynamic>[];
-
-    final originalNegated = widget.extractionResult['negated'];
-
-    if (originalNegated is List) {
-      negated.addAll(originalNegated);
-    }
-
-    final existingColumns = negated
-        .whereType<Map>()
-        .map((item) => item['column']?.toString())
-        .whereType<String>()
-        .toSet();
-
-    final confirmationAnswers = widget.followUpAnswers['confirmations'];
-
-    if (confirmationAnswers is List) {
-      for (final item in confirmationAnswers) {
-        if (item is! Map || item['confirmed'] != false) {
-          continue;
-        }
-
-        final column = item['column']?.toString();
-
-        if (column == null ||
-            column.isEmpty ||
-            existingColumns.contains(column)) {
-          continue;
-        }
-
-        negated.add({
-          'column': column,
-          'matched_text': item['matched_text']?.toString(),
-          'layer': 'confirmation',
-          'display': _formatColumnName(column),
-        });
-
-        existingColumns.add(column);
+      if (present) {
+        confirmedPresent.add(toJson(symptom, true));
+      } else {
+        confirmedAbsent.add(toJson(symptom, false));
       }
     }
 
-    return negated;
+    final updatedResult =
+    Map<String, dynamic>.from(widget.extractionResult);
+
+    // Keep the original NLP result for future comparison.
+    updatedResult['original_extraction'] = {
+      'symptoms': widget.extractionResult['symptoms'],
+      'negated': widget.extractionResult['negated'],
+    };
+
+    // The corrected values become the authoritative result.
+    updatedResult['symptoms'] = confirmedPresent;
+    updatedResult['negated'] = confirmedAbsent;
+
+    updatedResult['n_actionable'] = confirmedPresent.length;
+    updatedResult['n_confirmed_absent'] = confirmedAbsent.length;
+
+    updatedResult['follow_up_answers'] =
+        widget.followUpAnswers;
+
+    updatedResult['original_description'] =
+        widget.originalDescription;
+
+    widget.onContinue(updatedResult);
   }
 
   @override
@@ -242,17 +343,22 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   _buildTitle(),
-                  const SizedBox(height: 22),
-                  _buildProgressIndicator(),
-                  const SizedBox(height: 30),
-                  Expanded(child: _buildSymptomList()),
                   const SizedBox(height: 12),
-                  _buildContinueButton(),
-                  const SizedBox(height: 14),
-                  _buildEditButton(),
+                  _buildProgressIndicator(),
                   const SizedBox(height: 18),
+                  Expanded(
+                    child: Scrollbar(
+                      thumbVisibility: true,
+                      child: _buildSymptomList(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildContinueButton(),
+                  const SizedBox(height: 6),
+                  _buildEditButton(),
+                  const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
                     child: SosButton(onTap: () {}),
@@ -268,7 +374,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return SizedBox(
-      height: 80,
+      height: 65,
       child: Stack(
         children: [
           Transform.translate(
@@ -306,12 +412,13 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     );
   }
 
+
   Widget _buildTitle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'We understand your\nsymptoms as...',
+          'Let’s confirm your\nsymptoms',
           style: GoogleFonts.reemKufi(
             color: Colors.black,
             fontSize: 32,
@@ -321,9 +428,9 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'We identified the following symptoms from '
-          'your description. Please review them and '
-          'confirm that they are correct.',
+          'Please review both the symptoms we detected '
+              'and those we understood as denied. '
+              'Correct anything that is not accurate.',
           style: GoogleFonts.reemKufi(
             color: brown,
             fontSize: 15,
@@ -334,6 +441,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       ],
     );
   }
+
 
   Widget _buildProgressIndicator() {
     final progressSegments = <Widget>[];
@@ -380,83 +488,241 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     );
   }
 
+
   Widget _buildSymptomList() {
-    if (_symptoms.isEmpty) {
-      return Center(
+    if (_symptoms.isEmpty &&
+        _deniedSymptoms.isEmpty &&
+        _conflictingSymptoms.isEmpty) {      return Center(
         child: Text(
-          'No symptoms remain.\n'
-          'Edit your description and try again.',
+          'No symptoms were identified.\n'
+              'Edit your description and try again.',
           textAlign: TextAlign.center,
           style: GoogleFonts.reemKufi(
             color: brown,
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            height: 1.6,
           ),
         ),
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-      itemCount: _symptoms.length,
-      separatorBuilder: (_, _) {
-        return const SizedBox(height: 12);
-      },
-      itemBuilder: (context, index) {
-        final symptom = _symptoms[index];
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      primary: true,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 2,
+        vertical: 4,
+      ),
+      children: [
+        if (_symptoms.isNotEmpty) ...[
+          Text(
+            'Detected Symptoms',
+            style: GoogleFonts.reemKufi(
+              color: darkBrown,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Are you currently experiencing these symptoms?',
+            style: GoogleFonts.reemKufi(
+              color: brown,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 14),
 
-        return Container(
-          constraints: const BoxConstraints(minHeight: 54),
-          padding: const EdgeInsets.only(left: 20, right: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.10),
-                blurRadius: 7,
-                offset: const Offset(0, 4),
-              ),
-            ],
+          ..._symptoms.map(
+                (symptom) => _buildReviewCard(
+              symptom: symptom,
+              isOriginallyDenied: false,
+            ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  symptom.displayName,
-                  style: GoogleFonts.reemKufi(
-                    color: brown,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  _removeSymptom(index);
-                },
-                tooltip: 'Remove symptom',
-                icon: const Icon(
-                  Icons.close_rounded,
-                  color: Color(0xFF554B47),
-                  size: 28,
-                ),
-              ),
-            ],
+        ],
+
+        if (_deniedSymptoms.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text(
+            'Symptoms Understood as Denied',
+            style: GoogleFonts.reemKufi(
+              color: darkBrown,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        );
-      },
+          const SizedBox(height: 6),
+          Text(
+            'We understood that you do not have these '
+                'symptoms. Please correct us if this is wrong.',
+            style: GoogleFonts.reemKufi(
+              color: brown,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          ..._deniedSymptoms.map(
+                (symptom) => _buildReviewCard(
+              symptom: symptom,
+              isOriginallyDenied: true,
+            ),
+          ),
+        ],
+
+        if (_conflictingSymptoms.isNotEmpty) ...[
+          const SizedBox(height: 24),
+
+          Text(
+            'Symptoms Needing Clarification',
+            style: GoogleFonts.reemKufi(
+              color: darkBrown,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            'We found conflicting information about these '
+                'symptoms. Please tell us whether you currently '
+                'have them.',
+            style: GoogleFonts.reemKufi(
+              color: brown,
+              fontSize: 13,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          ..._conflictingSymptoms.map(
+                (symptom) => _buildReviewCard(
+              symptom: symptom,
+              isOriginallyDenied: false,
+            ),
+          ),
+        ],
+
+      ],
     );
   }
+
+  Widget _buildReviewCard({
+    required _ReviewedSymptom symptom,
+    required bool isOriginallyDenied,
+  }) {
+    final selected = _decisions[symptom.column];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 7,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            symptom.displayName,
+            style: GoogleFonts.reemKufi(
+              color: brown,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildChoiceButton(
+                  label: isOriginallyDenied
+                      ? 'I have it'
+                      : 'Yes',
+                  isSelected: selected == true,
+                  onPressed: () {
+                    setState(() {
+                      _decisions[symptom.column] = true;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildChoiceButton(
+                  label: isOriginallyDenied
+                      ? "I don't have it"
+                      : 'No',
+                  isSelected: selected == false,
+                  onPressed: () {
+                    setState(() {
+                      _decisions[symptom.column] = false;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChoiceButton({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onPressed,
+  }) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        backgroundColor:
+        isSelected ? const Color(0xFFF0EBE6) : Colors.white,
+        foregroundColor: darkBrown,
+        side: BorderSide(
+          color: isSelected ? darkBrown : borderColor,
+          width: isSelected ? 2 : 1,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 12,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.reemKufi(
+          fontSize: 12,
+          fontWeight:
+          isSelected ? FontWeight.w700 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildContinueButton() {
     return SizedBox(
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: _symptoms.isEmpty ? null : _continue,
+        onPressed: _allReviewed ? _continue : null,
         style: ElevatedButton.styleFrom(
           elevation: 5,
           backgroundColor: darkBrown,

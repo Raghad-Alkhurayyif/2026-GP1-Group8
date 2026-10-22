@@ -8,6 +8,7 @@ import 'account_screen.dart';
 import 'follow_up_questions_screen.dart';
 import 'symptom_review_screen.dart';
 import '../services/assessment_service.dart';
+import 'symptom_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -386,8 +387,19 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
               onEditDescription: () {
                 Navigator.of(reviewContext).popUntil((route) => route.isFirst);
               },
+
               onContinue: (confirmedResult) async {
-                try {
+                final presentSymptoms =
+                    confirmedResult['symptoms'] as List? ?? [];
+
+                final deniedSymptoms =
+                    confirmedResult['negated'] as List? ?? [];
+
+                final modifiers = result['modifiers'] as List? ?? [];
+
+                Future<void> saveSubmission(
+                  Map<String, Map<String, dynamic>> details,
+                ) async {
                   final isForCurrentUser =
                       followUpAnswers['confirm_subject'] != false;
 
@@ -409,38 +421,52 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
 
                   await _assessmentService.completeSymptomSubmission(
                     submissionId: widget.submissionId,
-                    symptoms: confirmedResult['symptoms'] as List? ?? [],
-                    negatedSymptoms: confirmedResult['negated'] as List? ?? [],
+                    symptoms: presentSymptoms,
+                    negatedSymptoms: deniedSymptoms,
                     isForCurrentUser: isForCurrentUser,
                     subjectAge: subjectAge,
-                  );
-
-                  if (!reviewContext.mounted) {
-                    return;
-                  }
-
-                  ScaffoldMessenger.of(reviewContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Symptoms confirmed.',
-                        style: GoogleFonts.reemKufi(),
-                      ),
-                    ),
-                  );
-                } catch (_) {
-                  if (!reviewContext.mounted) {
-                    return;
-                  }
-
-                  ScaffoldMessenger.of(reviewContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'The symptoms could not be saved. Please try again.',
-                        style: GoogleFonts.reemKufi(),
-                      ),
-                    ),
+                    symptomDetails: details,
                   );
                 }
+
+                if (presentSymptoms.isEmpty) {
+                  try {
+                    await saveSubmission(<String, Map<String, dynamic>>{});
+
+                    if (reviewContext.mounted) {
+                      ScaffoldMessenger.of(reviewContext).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No symptoms were confirmed as present.',
+                          ),
+                        ),
+                      );
+                      Navigator.of(reviewContext)
+                          .popUntil((route) => route.isFirst);
+                    }
+                  } catch (_) {
+                    if (reviewContext.mounted) {
+                      ScaffoldMessenger.of(reviewContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Unable to save the symptom review.'),
+                        ),
+                      );
+                    }
+                  }
+                  return;
+                }
+
+                if (!reviewContext.mounted) return;
+
+                Navigator.of(reviewContext).push(
+                  MaterialPageRoute(
+                    builder: (_) => SymptomDetailsScreen(
+                      symptoms: presentSymptoms,
+                      modifiers: modifiers,
+                      onFinish: saveSubmission,
+                    ),
+                  ),
+                );
               },
             );
           },

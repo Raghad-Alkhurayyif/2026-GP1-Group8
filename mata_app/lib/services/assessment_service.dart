@@ -46,6 +46,7 @@ class AssessmentService {
     required List<dynamic> negatedSymptoms,
     required bool isForCurrentUser,
     required int subjectAge,
+    required Map<String, Map<String, dynamic>> symptomDetails,
   }) async {
     final user = _auth.currentUser;
 
@@ -68,6 +69,7 @@ class AssessmentService {
         .doc(submissionId)
         .update({
           'recognizedSymptoms': recognizedSymptoms,
+          'symptomDetails': symptomDetails,
           'subject': isForCurrentUser ? 'self' : 'other',
           'subjectAge': subjectAge,
           'status': 'confirmed',
@@ -103,11 +105,13 @@ class AssessmentService {
     return symptoms
         .whereType<Map>()
         .map(
-          (symptom) => {
+          (symptom) => <String, dynamic>{
             'column': symptom['column']?.toString(),
             'isAsserted': isAsserted,
             'matchedText': symptom['matched_text']?.toString(),
             'layer': symptom['layer']?.toString(),
+            'display': symptom['display']?.toString(),
+            'userConfirmed': symptom['user_confirmed'] == true,
           },
         )
         .where(
