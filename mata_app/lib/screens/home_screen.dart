@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../services/symptom_api_service.dart';
 import '../widgets/mata_bottom_navigation_bar.dart';
-import 'account_screen.dart';
 import '../widgets/sos_button.dart';
+import 'account_screen.dart';
+import 'follow_up_questions_screen.dart';
+import 'symptom_review_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,7 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _submitSymptoms() {
     FocusScope.of(context).unfocus();
 
-    if (_symptomsController.text.trim().isEmpty) {
+    final description = _symptomsController.text.trim();
+
+    if (description.isEmpty) {
       setState(() {
         _showError = true;
       });
@@ -43,8 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
       _showError = false;
     });
 
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const AnalyzingScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AnalyzingScreen(description: description),
+      ),
+    );
   }
 
   @override
@@ -235,7 +243,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         : null,
                   ),
                   const Spacer(),
-
                   MataBottomNavigationBar(
                     currentIndex: 0,
                     onHomeTap: () {},
@@ -259,12 +266,140 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class AnalyzingScreen extends StatelessWidget {
-  const AnalyzingScreen({super.key});
+class AnalyzingScreen extends StatefulWidget {
+  const AnalyzingScreen({super.key, required this.description});
 
+  final String description;
+
+  @override
+  State<AnalyzingScreen> createState() => _AnalyzingScreenState();
+}
+
+class _AnalyzingScreenState extends State<AnalyzingScreen> {
   static const Color brown = Color(0xFF79543B);
   static const Color darkBrown = Color(0xFF5C3F38);
   static const Color inputBackground = Color(0xFFF7F3EB);
+  static const Color red = Color(0xFFB71616);
+
+  final SymptomApiService _apiService = SymptomApiService();
+
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _analyzeSymptoms();
+  }
+
+  Future<void> _analyzeSymptoms() async {
+    setState(() {
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await _apiService.extractSymptoms(widget.description);
+
+      if (!mounted) {
+        return;
+      }
+      if (!_hasRecognizedSymptoms(result)) {
+        setState(() {
+          _errorMessage =
+              'We couldn’t identify any symptoms. '
+              'Please describe what you are experiencing '
+              'and try again.';
+        });
+        return;
+      }
+
+      final hasFollowUpQuestions = _hasFollowUpQuestions(result);
+
+      final description = widget.description;
+
+      Route<void> buildReviewRoute(Map<String, dynamic> followUpAnswers) {
+        return MaterialPageRoute(
+          builder: (reviewContext) {
+            return SymptomReviewScreen(
+              originalDescription: description,
+              extractionResult: result,
+              followUpAnswers: followUpAnswers,
+              currentStep: hasFollowUpQuestions ? 2 : 1,
+              totalSteps: hasFollowUpQuestions ? 3 : 2,
+              onEditDescription: () {
+                Navigator.of(reviewContext).popUntil((route) => route.isFirst);
+              },
+              onContinue: (confirmedResult) {
+                debugPrint('Confirmed symptoms: $confirmedResult');
+
+                ScaffoldMessenger.of(reviewContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Symptoms confirmed.',
+                      style: GoogleFonts.reemKufi(),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      }
+
+      if (hasFollowUpQuestions) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (questionsContext) {
+              return FollowUpQuestionsScreen(
+                extractionResult: result,
+                onContinue: (answers) {
+                  Navigator.of(questionsContext)
+                      .push(buildReviewRoute(answers));
+                },
+              );
+            },
+          ),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          buildReviewRoute(const {
+            'clarifications': <Map<String, dynamic>>[],
+            'confirmations': <Map<String, dynamic>>[],
+            'confirm_subject': null,
+          }),
+        );
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage =
+            'We could not analyze your symptoms. '
+            'Make sure the server is running and try again.';
+      });
+    }
+  }
+
+  bool _hasRecognizedSymptoms(Map<String, dynamic> result) {
+    const relevantFields = ['symptoms', 'negated', 'clarify', 'confirm'];
+
+    return relevantFields.any((field) {
+      final value = result[field];
+      return value is List && value.isNotEmpty;
+    });
+  }
+
+  bool _hasFollowUpQuestions(Map<String, dynamic> result) {
+    final clarify = result['clarify'];
+    final confirm = result['confirm'];
+
+    final hasClarification = clarify is List && clarify.isNotEmpty;
+    final hasConfirmation = confirm is List && confirm.isNotEmpty;
+    final needsSubjectConfirmation = result['confirm_subject'] == true;
+
+    return hasClarification || hasConfirmation || needsSubjectConfirmation;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -301,8 +436,8 @@ class AnalyzingScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    "Ma'ta is reviewing your symptoms to "
-                    'prepare your assessment.',
+                    "Ma'ta is reviewing your symptoms "
+                    'to prepare your assessment.',
                     style: GoogleFonts.reemKufi(
                       color: brown,
                       fontSize: 16,
@@ -311,43 +446,106 @@ class AnalyzingScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 60),
-                  const Center(
-                    child: SizedBox(
-                      width: 145,
-                      height: 145,
-                      child: CircularProgressIndicator(
-                        color: darkBrown,
-                        backgroundColor: Color(0xFFB8A79D),
-                        strokeWidth: 20,
-                        strokeCap: StrokeCap.round,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 55),
-
-                  Transform.translate(
-                    offset: const Offset(-12, -10),
-                    child: Center(
-                      child: Text(
-                        'This usually takes a few seconds.\n'
-                        'Please don’t close the app.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.reemKufi(
-                          color: brown,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 1.8,
-                        ),
-                      ),
-                    ),
-                  ),
+                  if (_errorMessage == null)
+                    _buildLoadingContent()
+                  else
+                    _buildErrorContent(),
                   const Spacer(),
                 ],
               ),
             ),
           ),
           Positioned(right: 28, bottom: 105, child: SosButton(onTap: () {})),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingContent() {
+    return Column(
+      children: [
+        const Center(
+          child: SizedBox(
+            width: 145,
+            height: 145,
+            child: CircularProgressIndicator(
+              color: darkBrown,
+              backgroundColor: Color(0xFFB8A79D),
+              strokeWidth: 20,
+              strokeCap: StrokeCap.round,
+            ),
+          ),
+        ),
+        const SizedBox(height: 55),
+        Center(
+          child: Text(
+            'This usually takes a few seconds.\n'
+            'Please don’t close the app.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.reemKufi(
+              color: brown,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.8,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorContent() {
+    return Center(
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline_rounded, color: red, size: 54),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage!,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.reemKufi(
+              color: red,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 22),
+          SizedBox(
+            width: 150,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _analyzeSymptoms,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: darkBrown,
+                foregroundColor: inputBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              child: Text(
+                'Try Again',
+                style: GoogleFonts.reemKufi(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Back',
+              style: GoogleFonts.reemKufi(
+                color: brown,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
