@@ -61,10 +61,11 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
   }
 
   bool get _allQuestionsAnswered {
-    final allAnswersSelected =
-        _questions.isEmpty || _selectedAnswers.length == _questions.length;
+    final requiredQuestionsAnswered = _questions
+        .where((question) => question.type != _QuestionType.clarify)
+        .every((question) => _selectedAnswers.containsKey(question.id));
 
-    return allAnswersSelected && _isOtherPersonAgeValid;
+    return requiredQuestionsAnswered && _isOtherPersonAgeValid;
   }
 
   void _continue() {
@@ -95,6 +96,7 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
         case _QuestionType.confirm:
           confirmationAnswers.add({
             'column': question.column,
+            'matched_text': question.matchedText,
             'confirmed': answer == 'yes',
           });
           break;

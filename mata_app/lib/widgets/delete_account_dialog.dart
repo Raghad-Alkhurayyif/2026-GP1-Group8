@@ -121,7 +121,12 @@ class _DeleteAccountDialogState
               CrossAxisAlignment.start,
           children: [
             Text(
-              'This action is permanent. Your account and personal information will be deleted and cannot be recovered.',
+              'Deleting your account will permanently remove:\n\n'
+'• Your profile information\n'
+'• Your assessment history and recognized symptoms\n'
+'• Your generated reports\n'
+'• Your emergency contacts and default SOS contact\n\n'
+'This action cannot be undone.',
               style: GoogleFonts.reemKufi(
                 color: darkBrown,
                 fontSize: 14,

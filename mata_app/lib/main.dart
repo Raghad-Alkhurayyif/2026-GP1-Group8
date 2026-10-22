@@ -9,9 +9,7 @@ import 'screens/welcome_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const MainApp());
 }
@@ -28,27 +26,97 @@ class MainApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  late final Future<void> _sessionCheck;
+
+  bool _sessionExpired = false;
+  bool _messageShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sessionCheck = _checkStoredSession();
+  }
+
+  Future<void> _checkStoredSession() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    try {
+      await user.reload();
+    } on FirebaseAuthException catch (error) {
+      const invalidSessionCodes = {
+        'user-disabled',
+        'user-not-found',
+        'invalid-user-token',
+        'user-token-expired',
+      };
+
+      if (invalidSessionCodes.contains(error.code)) {
+        _sessionExpired = true;
+        await FirebaseAuth.instance.signOut();
+      }
+    }
+  }
+
+  void _showSessionExpiredMessage(BuildContext context) {
+    if (!_sessionExpired || _messageShown) {
+      return;
+    }
+
+    _messageShown = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Your session has ended. Please sign in again.'),
+        ),
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return FutureBuilder<void>(
+      future: _sessionCheck,
+      builder: (context, sessionSnapshot) {
+        if (sessionSnapshot.connectionState != ConnectionState.done) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (snapshot.hasData) {
-          return const HomeScreen();
-        }
+        return StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, authSnapshot) {
+            if (authSnapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
 
-        return const WelcomeScreen();
+            if (authSnapshot.hasData) {
+              return const HomeScreen();
+            }
+
+            _showSessionExpiredMessage(context);
+            return const WelcomeScreen();
+          },
+        );
       },
     );
   }
