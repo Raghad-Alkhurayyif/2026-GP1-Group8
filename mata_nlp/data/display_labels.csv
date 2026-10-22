@@ -1,0 +1,328 @@
+column,display,source
+abdominal distention,abdominal distention,column
+abnormal appearing skin,skin looks wrong,lexicon
+abnormal breathing sounds,noisy breathing,lexicon
+abnormal involuntary movements,tremor,lexicon
+abnormal movement of eyelid,eye twitch,lexicon
+absence of menstruation,late period,lexicon
+abusing alcohol,alcohol problem,lexicon
+ache all over,body aches,lexicon
+acne or pimples,acne or pimples,column
+allergic reaction,allergy flare,lexicon
+ankle pain,ankle pain,column
+ankle swelling,ankle swelling,column
+ankle weakness,ankle weakness,column
+antisocial behavior,antisocial behavior,column
+anxiety and nervousness,anxious,lexicon
+apnea,sleep apnea,lexicon
+arm lump or mass,arm lump or mass,column
+arm pain,arm pain,column
+arm stiffness or tightness,arm stiffness or tightness,column
+arm swelling,arm swelling,column
+arm weakness,arm weakness,column
+back cramps or spasms,back cramps or spasms,column
+back mass or lump,back mass or lump,column
+back pain,back pain,column
+back stiffness or tightness,back stiffness or tightness,column
+back weakness,back weakness,column
+bedwetting,bedwetting,column
+bladder mass,bladder mass,column
+bleeding from ear,bleeding from ear,column
+bleeding from eye,bleeding from eye,column
+bleeding gums,bleeding gums,column
+bleeding or discharge from nipple,bleeding or discharge from nipple,column
+blindness,blindness,column
+blood clots during menstrual periods,blood clots during menstrual periods,column
+blood in stool,blood in stool,column
+blood in urine,blood in urine,column
+bones are painful,bone pain,lexicon
+bowlegged or knock-kneed,bow legged,lexicon
+breathing fast,breathing fast,column
+bumps on penis,bumps on penis,column
+burning abdominal pain,burning abdominal pain,column
+burning chest pain,burning chest pain,column
+changes in stool appearance,changes in stool appearance,column
+chest tightness,chest tightness,column
+chills,chills,column
+cloudy eye,milky eye,lexicon
+congestion in chest,congestion in chest,column
+constipation,constipation,column
+coryza,head cold,lexicon
+cough,cough,column
+coughing up sputum,coughing up sputum,column
+cramps and spasms,muscle cramps,lexicon
+cross-eyed,squint,lexicon
+decreased appetite,loss of appetite,lexicon
+decreased heart rate,slow heartbeat,lexicon
+delusions or hallucinations,delusions or hallucinations,column
+depression,depression,column
+depressive or psychotic symptoms,depressive or psychotic symptoms,column
+diaper rash,diaper rash,column
+diarrhea,diarrhea,column
+difficulty breathing,difficulty breathing,column
+difficulty eating,trouble eating,lexicon
+difficulty in swallowing,difficulty in swallowing,column
+difficulty speaking,difficulty speaking,column
+diminished hearing,hearing loss,lexicon
+diminished vision,fuzzy vision,lexicon
+disturbance of memory,forgetful,lexicon
+dizziness,dizziness,column
+double vision,double vision,column
+drainage in throat,drainage in throat,column
+drug abuse,drug abuse,column
+dry lips,chapped lips,lexicon
+dry or flaky scalp,dandruff,lexicon
+ear pain,ear pain,column
+early or late onset of menopause,early or late onset of menopause,column
+elbow pain,elbow pain,column
+elbow swelling,elbow swelling,column
+elbow weakness,elbow weakness,column
+emotional symptoms,emotional symptoms,column
+excessive anger,rage,lexicon
+excessive appetite,always hungry,lexicon
+excessive growth,growing too fast,lexicon
+excessive urination at night,peeing through the night,lexicon
+eye burns or stings,eye burns or stings,column
+eye deviation,eye deviation,column
+eye moves abnormally,eyes wobble,lexicon
+eye redness,eye redness,column
+eyelid lesion or rash,flaky eyelid,lexicon
+eyelid swelling,eyelid swelling,column
+facial pain,facial pain,column
+fainting,fainting,column
+fatigue,fatigue,column
+fears and phobias,terrified of,lexicon
+feeling cold,feeling cold,column
+feeling hot,overheating,lexicon
+feeling ill,feel rough,lexicon
+fever,fever,column
+flatulence,flatulence,column
+flu-like syndrome,like flu,lexicon
+fluid in ear,fluid in ear,column
+fluid retention,fluid retention,column
+flushing,flushing,column
+focal weakness,focal weakness,column
+foot or toe lump or mass,foot or toe lump or mass,column
+foot or toe pain,foot or toe pain,column
+foot or toe stiffness or tightness,foot or toe stiffness or tightness,column
+foot or toe swelling,foot or toe swelling,column
+foot or toe weakness,foot or toe weakness,column
+foreign body sensation in eye,foreign body sensation in eye,column
+frequent menstruation,frequent menstruation,column
+frequent urination,frequent urination,column
+frontal headache,frontal headache,column
+groin mass,groin mass,column
+groin pain,groin pain,column
+gum pain,gum pain,column
+hand or finger cramps or spasms,hand or finger cramps or spasms,column
+hand or finger lump or mass,hand or finger lump or mass,column
+hand or finger pain,hand or finger pain,column
+hand or finger stiffness or tightness,hand or finger stiffness or tightness,column
+hand or finger swelling,hand or finger swelling,column
+hand or finger weakness,hand or finger weakness,column
+headache,headache,column
+heartburn,heartburn,column
+heavy menstrual flow,heavy menstrual flow,column
+hemoptysis,bloody mucus,lexicon
+hesitancy,trouble starting to pee,lexicon
+hip pain,hip pain,column
+hip stiffness or tightness,hip stiffness or tightness,column
+hoarse voice,hoarse voice,column
+hostile behavior,hostile behavior,column
+hot flashes,overheating episodes,lexicon
+hurts to breath,hurts to breath,column
+hysterical behavior,hysterical behavior,column
+impotence,impotence,column
+incontinence of stool,incontinence of stool,column
+increased heart rate,fast pulse,lexicon
+infant feeding problem,infant feeding problem,column
+infant spitting up,infant spitting up,column
+infertility,trouble conceiving,lexicon
+insomnia,insomnia,column
+intermenstrual bleeding,intermenstrual bleeding,column
+involuntary urination,incontinent,lexicon
+irregular appearing nails,ridged nails,lexicon
+irregular appearing scalp,crusty scalp,lexicon
+irregular belly button,irregular belly button,column
+irregular heartbeat,irregular heartbeat,column
+irritable infant,irritable infant,column
+itchiness of eye,eyes itch,lexicon
+itching of scrotum,itching of scrotum,column
+itching of skin,itching of skin,column
+itching of the anus,itchy bottom,lexicon
+itchy ear(s),itchy ear(s),column
+itchy eyelid,itchy eyelid,column
+itchy scalp,itchy scalp,column
+jaundice,yellowing,lexicon
+jaw swelling,jaw swelling,column
+joint pain,joint pain,column
+joint swelling,joint swelling,column
+kidney mass,kidney mass,column
+knee lump or mass,knee lump or mass,column
+knee pain,knee pain,column
+knee stiffness or tightness,knee stiffness or tightness,column
+knee swelling,knee swelling,column
+knee weakness,knee weakness,column
+lack of growth,behind on growth,lexicon
+lacrimation,teary eyes,lexicon
+leg cramps or spasms,leg cramps or spasms,column
+leg lump or mass,leg lump or mass,column
+leg pain,calf pain,lexicon
+leg stiffness or tightness,leg stiffness or tightness,column
+leg swelling,one calf is swollen,lexicon
+leg weakness,leg weakness,column
+lip sore,lip sore,column
+lip swelling,lip swelling,column
+long menstrual periods,long menstrual periods,column
+loss of sensation,loss of sensation,column
+loss of sex drive,low libido,lexicon
+low back cramps or spasms,low back cramps or spasms,column
+low back pain,low back pain,column
+low back weakness,low back weakness,column
+low self-esteem,no confidence,lexicon
+low urine output,barely any wee,lexicon
+lower abdominal pain,lower abdominal pain,column
+lower body pain,lower body pain,column
+lump in throat,lump in throat,column
+lump or mass of breast,lump or mass of breast,column
+lymphedema,puffy limb,lexicon
+mass in scrotum,mass in scrotum,column
+mass on eyelid,mass on eyelid,column
+mass or swelling around the anus,mass or swelling around the anus,column
+melena,black poo,lexicon
+mouth dryness,mouth dryness,column
+mouth pain,mouth pain,column
+mouth ulcer,mouth ulcer,column
+"muscle cramps, contractures, or spasms","muscle cramps, contractures, or spasms",column
+muscle pain,muscle pain,column
+muscle stiffness or tightness,muscle stiffness or tightness,column
+muscle swelling,muscle swelling,column
+muscle weakness,muscle weakness,column
+nasal congestion,nasal congestion,column
+nausea,nausea,column
+neck cramps or spasms,neck cramps or spasms,column
+neck mass,neck mass,column
+neck pain,neck pain,column
+neck stiffness or tightness,neck stiffness or tightness,column
+neck swelling,neck swelling,column
+nightmares,nightmares,column
+nosebleed,nosebleed,column
+obsessions and compulsions,obsessive thoughts,lexicon
+pain during intercourse,pain during intercourse,column
+pain during pregnancy,pain during pregnancy,column
+pain in eye,sore eye,lexicon
+pain in gums,sore gums,lexicon
+pain in testicles,pain in testicles,column
+pain of the anus,anal pain,lexicon
+pain or soreness of breast,pain or soreness of breast,column
+painful menstruation,painful menstruation,column
+painful sinuses,painful sinuses,column
+painful urination,painful urination,column
+palpitations,palpitations,column
+paresthesia,tingly,lexicon
+pelvic pain,pelvic pain,column
+pelvic pressure,pelvic pressure,column
+penile discharge,penile discharge,column
+penis pain,penis pain,column
+penis redness,penis redness,column
+peripheral edema,peripheral edema,column
+plugged feeling in ear,blocked ear,lexicon
+poor circulation,poor circulation,column
+postpartum problems of the breast,postpartum problems of the breast,column
+premature ejaculation,premature ejaculation,column
+premenstrual tension or irritability,premenstrual tension or irritability,column
+problems during pregnancy,problems during pregnancy,column
+problems with movement,hard to move,lexicon
+problems with shape or size of breast,breasts look different,lexicon
+pulling at ears,tugging at her ear,lexicon
+pus draining from ear,pus draining from ear,column
+recent pregnancy,recent pregnancy,column
+recent weight loss,recent weight loss,column
+rectal bleeding,rectal bleeding,column
+redness in ear,red inside the ear,lexicon
+redness in or around nose,redness in or around nose,column
+regurgitation,food repeating,lexicon
+restlessness,restlessness,column
+retention of urine,can't pass urine,lexicon
+rib pain,rib pain,column
+ringing in ear,tinnitus,lexicon
+scanty menstrual flow,scanty menstrual flow,column
+seizures,seizures,column
+sharp abdominal pain,sharp abdominal pain,column
+sharp chest pain,sharp chest pain,column
+shortness of breath,shortness of breath,column
+shoulder lump or mass,shoulder lump or mass,column
+shoulder pain,shoulder pain,column
+shoulder stiffness or tightness,shoulder stiffness or tightness,column
+shoulder swelling,shoulder swelling,column
+shoulder weakness,shoulder weakness,column
+side pain,side pain,column
+sinus congestion,sinus congestion,column
+"skin dryness, peeling, scaliness, or roughness","skin dryness, peeling, scaliness, or roughness",column
+skin growth,skin growth,column
+skin irritation,skin irritation,column
+skin lesion,skin lesion,column
+skin moles,skin moles,column
+skin on arm or hand looks infected,skin on arm or hand looks infected,column
+skin on leg or foot looks infected,skin on leg or foot looks infected,column
+skin pain,skin pain,column
+skin rash,skin rash,column
+skin swelling,skin swelling,column
+sleepiness,sleepiness,column
+slurring words,slurring words,column
+smoking problems,smoking problems,column
+sneezing,sneeze,lexicon
+sore in nose,sore in nose,column
+sore throat,sore throat,column
+spots or clouds in vision,spots or clouds in vision,column
+spotting or bleeding during pregnancy,spotting or bleeding during pregnancy,column
+stiffness all over,stiffness everywhere,lexicon
+stomach bloating,stomach bloating,column
+suprapubic pain,suprapubic pain,column
+sweating,sweating,column
+swelling of scrotum,swelling of scrotum,column
+swollen abdomen,swollen abdomen,column
+swollen eye,puffy eye,lexicon
+swollen lymph nodes,swollen lymph nodes,column
+swollen or red tonsils,swollen or red tonsils,column
+symptoms of bladder,bladder problem,lexicon
+symptoms of eye,eye problem,lexicon
+symptoms of infants,baby seems unwell,lexicon
+symptoms of prostate,prostate problem,lexicon
+symptoms of the face,face is drooping,lexicon
+symptoms of the kidneys,kidney problem,lexicon
+symptoms of the scrotum and testes,symptoms of the scrotum and testes,column
+temper problems,temper problems,column
+thirst,thirst,column
+throat feels tight,throat feels tight,column
+throat redness,throat redness,column
+throat swelling,throat swelling,column
+tongue lesions,tongue lesions,column
+too little hair,going bald,lexicon
+toothache,toothache,column
+unpredictable menstruation,irregular periods,lexicon
+unusual color or odor to urine,unusual color or odor to urine,column
+unwanted hair,excess hair,lexicon
+upper abdominal pain,upper abdominal pain,column
+uterine contractions,uterine contractions,column
+vaginal bleeding after menopause,bleeding since the menopause,lexicon
+vaginal discharge,vaginal discharge,column
+vaginal dryness,vaginal dryness,column
+vaginal itching,vaginal itching,column
+vaginal pain,vaginal pain,column
+vaginal redness,vaginal redness,column
+vomiting,vomiting,column
+vomiting blood,vomiting blood,column
+vulvar irritation,vulvar irritation,column
+vulvar sore,vulvar sore,column
+warts,warts,column
+weakness,weakness,column
+weight gain,weight gain,column
+wheezing,chest whistles,lexicon
+white discharge from eye,sticky eye,lexicon
+wrinkles on skin,wrinkles on skin,column
+wrist lump or mass,wrist lump or mass,column
+wrist pain,wrist pain,column
+wrist stiffness or tightness,wrist stiffness or tightness,column
+wrist swelling,wrist swelling,column
+wrist weakness,wrist weakness,column

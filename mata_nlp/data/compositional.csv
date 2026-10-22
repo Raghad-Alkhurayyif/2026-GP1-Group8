@@ -1,0 +1,147 @@
+﻿phrase,part,canonical,lang,source,status
+tummy,site,abdominal,en,authored,active
+belly,site,abdominal,en,authored,active
+stomach,site,abdominal,en,authored,active
+abdomen,site,abdominal,en,authored,active
+gut,site,abdominal,en,authored,active
+midsection,site,abdominal,en,authored,active
+lower belly,site,lower abdominal,en,authored,active
+lower tummy,site,lower abdominal,en,authored,active
+lower abdomen,site,lower abdominal,en,authored,active
+below my belly button,site,lower abdominal,en,authored,active
+lower stomach,site,lower abdominal,en,authored,active
+calf,site,calf,en,authored,active
+calves,site,calf,en,authored,active
+upper belly,site,upper abdominal,en,authored,active
+upper tummy,site,upper abdominal,en,authored,active
+upper abdomen,site,upper abdominal,en,authored,active
+below my ribs,site,upper abdominal,en,authored,active
+under my ribs,site,upper abdominal,en,authored,active
+upper stomach,site,upper abdominal,en,authored,active
+chest,site,chest,en,authored,active
+breastbone,site,chest,en,authored,active
+ribcage,site,chest,en,authored,active
+front of my chest,site,chest,en,authored,active
+back,site,back,en,authored,active
+spine,site,back,en,authored,active
+lower back,site,low back,en,authored,active
+small of my back,site,low back,en,authored,active
+bottom of my back,site,low back,en,authored,active
+neck,site,neck,en,authored,active
+shoulder,site,shoulder,en,authored,active
+shoulders,site,shoulder,en,authored,active
+arm,site,arm,en,authored,active
+arms,site,arm,en,authored,active
+upper arm,site,arm,en,authored,active
+forearm,site,arm,en,authored,active
+elbow,site,elbow,en,authored,active
+elbows,site,elbow,en,authored,active
+wrist,site,wrist,en,authored,active
+wrists,site,wrist,en,authored,active
+hand,site,hand or finger,en,authored,active
+hands,site,hand or finger,en,authored,active
+finger,site,hand or finger,en,authored,active
+fingers,site,hand or finger,en,authored,active
+thumb,site,hand or finger,en,authored,active
+knuckle,site,hand or finger,en,authored,active
+hip,site,hip,en,authored,active
+hips,site,hip,en,authored,active
+leg,site,leg,en,authored,active
+legs,site,leg,en,authored,active
+thigh,site,leg,en,authored,active
+calf,site,leg,en,authored,active
+calves,site,leg,en,authored,active
+shin,site,leg,en,authored,active
+knee,site,knee,en,authored,active
+knees,site,knee,en,authored,active
+kneecap,site,knee,en,authored,active
+ankle,site,ankle,en,authored,active
+ankles,site,ankle,en,authored,active
+foot,site,foot or toe,en,authored,active
+feet,site,foot or toe,en,authored,active
+toe,site,foot or toe,en,authored,active
+toes,site,foot or toe,en,authored,active
+heel,site,foot or toe,en,authored,active
+jaw,site,jaw,en,authored,active
+ear,site,ear,en,authored,active
+ears,site,ear,en,authored,active
+face,site,facial,en,authored,active
+cheek,site,facial,en,authored,active
+forehead,site,facial,en,authored,active
+mouth,site,mouth,en,authored,active
+tongue,site,tongue,en,authored,active
+gum,site,gum,en,authored,active
+gums,site,gum,en,authored,active
+groin,site,groin,en,authored,active
+pelvis,site,pelvic,en,authored,active
+pelvic area,site,pelvic,en,authored,active
+side,site,side,en,authored,active
+flank,site,side,en,authored,active
+rib,site,rib,en,authored,active
+ribs,site,rib,en,authored,active
+muscle,site,muscle,en,authored,active
+muscles,site,muscle,en,authored,active
+joint,site,joint,en,authored,active
+joints,site,joint,en,authored,active
+skin,site,skin,en,authored,active
+eye,site,eye,en,authored,active
+eyes,site,eye,en,authored,active
+pain,sensation,pain,en,authored,active
+hurts,sensation,pain,en,authored,active
+hurting,sensation,pain,en,authored,active
+ache,sensation,pain,en,authored,active
+aching,sensation,pain,en,authored,active
+aches,sensation,pain,en,authored,active
+sore,sensation,pain,en,authored,active
+painful,sensation,pain,en,authored,active
+killing me,sensation,pain,en,authored,active
+agony,sensation,pain,en,authored,active
+throbbing,sensation,pain,en,authored,active
+sharp,sensation,sharp,en,authored,active
+stabbing,sensation,sharp,en,authored,active
+shooting,sensation,sharp,en,authored,active
+piercing,sensation,sharp,en,authored,active
+knife-like,sensation,sharp,en,authored,active
+burning,sensation,burning,en,authored,active
+burns,sensation,burning,en,authored,active
+burny,sensation,burning,en,authored,active
+on fire,sensation,burning,en,authored,active
+hot pain,sensation,burning,en,authored,active
+swollen,sensation,swelling,en,authored,active
+swelling,sensation,swelling,en,authored,active
+puffy,sensation,swelling,en,authored,active
+puffed up,sensation,swelling,en,authored,active
+inflamed,sensation,swelling,en,authored,active
+weak,sensation,weakness,en,authored,active
+weakness,sensation,weakness,en,authored,active
+no strength,sensation,weakness,en,authored,active
+giving way,sensation,weakness,en,authored,active
+gave way,sensation,weakness,en,authored,active
+gives way,sensation,weakness,en,authored,active
+buckled,sensation,weakness,en,authored,active
+buckles,sensation,weakness,en,authored,active
+stiff,sensation,stiffness or tightness,en,authored,active
+stiffness,sensation,stiffness or tightness,en,authored,active
+tight,sensation,stiffness or tightness,en,authored,active
+tightness,sensation,stiffness or tightness,en,authored,active
+cannot bend,sensation,stiffness or tightness,en,authored,active
+seized up,sensation,stiffness or tightness,en,authored,active
+cramp,sensation,cramps or spasms,en,authored,active
+cramping,sensation,cramps or spasms,en,authored,active
+cramps,sensation,cramps or spasms,en,authored,active
+spasm,sensation,cramps or spasms,en,authored,active
+spasms,sensation,cramps or spasms,en,authored,active
+going into spasm,sensation,cramps or spasms,en,authored,active
+lump,sensation,lump or mass,en,authored,active
+bump,sensation,lump or mass,en,authored,active
+mass,sensation,lump or mass,en,authored,active
+growth,sensation,lump or mass,en,authored,active
+swelling i can feel,sensation,lump or mass,en,authored,active
+red,sensation,redness,en,authored,active
+redness,sensation,redness,en,authored,active
+going red,sensation,redness,en,authored,active
+inflamed red,sensation,redness,en,authored,active
+hurt,sensation,pain,en,verb_inflection_gap,active
+ached,sensation,pain,en,verb_inflection_gap,active
+swell,sensation,swelling,en,verb_inflection_gap,active
+swells,sensation,swelling,en,verb_inflection_gap,active
