@@ -55,4 +55,83 @@ class AuthService {
   Future<void> sendPasswordResetEmail({required String email}) async {
     await _auth.sendPasswordResetEmail(email: email.trim());
   }
+
+  Future<void> updatePersonalInformation({
+    required String name,
+    required DateTime dateOfBirth,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-signed-in',
+        message: 'No signed-in user was found.',
+      );
+    }
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'name': name.trim(),
+      'dateOfBirth': Timestamp.fromDate(dateOfBirth),
+    });
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    final email = user?.email;
+
+    if (user == null || email == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-signed-in',
+        message: 'No signed-in user was found.',
+      );
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: currentPassword,
+    );
+
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPassword);
+  }
+
+  Future<void> deleteAccount({required String password}) async {
+    final user = _auth.currentUser;
+    final email = user?.email;
+
+    if (user == null || email == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-signed-in',
+        message: 'No signed-in user was found.',
+      );
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: password,
+    );
+
+    await user.reauthenticateWithCredential(credential);
+
+    final userDocument = _firestore.collection('users').doc(user.uid);
+
+    final userSnapshot = await userDocument.get();
+    final savedData = userSnapshot.data();
+
+    await userDocument.delete();
+
+    try {
+      await user.delete();
+      await _auth.signOut();
+    } catch (error) {
+      if (savedData != null) {
+        await userDocument.set(savedData);
+      }
+
+      rethrow;
+    }
+  }
 }

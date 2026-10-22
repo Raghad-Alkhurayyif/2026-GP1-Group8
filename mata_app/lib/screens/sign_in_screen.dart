@@ -55,10 +55,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
       if (!mounted) return;
 
-      // سنربطه بالشاشة الرئيسية بعد تجهيزها.
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signed in successfully.')));
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException {
       if (!mounted) return;
 
