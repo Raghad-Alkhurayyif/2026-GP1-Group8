@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../theme/mata_theme.dart';
+import '../widgets/stroke_background.dart';
 import 'symptom_completion_screen.dart';
 
 class SymptomDetailsScreen extends StatefulWidget {
@@ -28,9 +29,7 @@ class SymptomDetailsScreen extends StatefulWidget {
 
 class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
   static const brown = Color(0xFF79543B);
-  static const darkBrown = Color(0xFF5C3F38);
   static const softBeige = Color(0xFFF7F3EB);
-  static const borderColor = Color(0xFFDCCDB5);
 
   int _index = 0;
   bool _saving = false;
@@ -261,35 +260,45 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
     required bool selected,
     required VoidCallback onTap,
   }) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        backgroundColor: selected ? const Color(0xFFF0EBE6) : Colors.white,
-        foregroundColor: darkBrown,
-        side: BorderSide(
-          color: selected ? darkBrown : borderColor,
-          width: selected ? 2 : 1,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected
+              ? brown.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? brown : brown.withValues(alpha: 0.18),
+            width: selected ? 1.5 : 1,
+          ),
         ),
-        minimumSize: const Size(0, 44),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.reemKufi(fontSize: 13),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: MataText.body(
+            color: selected ? brown : MataColors.ink,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            height: 1.2,
+          ),
+        ),
       ),
     );
   }
 
   Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 10),
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
       child: Text(
-        title,
-        style: GoogleFonts.reemKufi(
-          fontSize: 17,
-          color: darkBrown,
-          fontWeight: FontWeight.w700,
+        title.toUpperCase(),
+        style: MataText.body(
+          fontSize: 11.5,
+          color: MataColors.faint,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1,
         ),
       ),
     );
@@ -305,231 +314,248 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
 
     return Scaffold(
       backgroundColor: softBeige,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Image.asset(
-                'assets/images/mata_logo.png',
-                width: 90,
-                height: 48,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Symptom Details',
-                style: GoogleFonts.reemKufi(
-                  fontSize: 27,
-                  fontWeight: FontWeight.w700,
-                  color: darkBrown,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Symptom ${_index + 1} of ${_symptoms.length}',
-                style: GoogleFonts.reemKufi(color: brown, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: (_index + 1) / _symptoms.length,
-                color: brown,
-                backgroundColor: borderColor,
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView(
-                  children: [
-                    Text(
-                      _displayName,
-                      style: GoogleFonts.reemKufi(
-                        color: darkBrown,
-                        fontSize: 23,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      'All details are optional. '
-                      'Review or change any information '
-                      'we found in your description.',
-                      style: GoogleFonts.reemKufi(color: brown, fontSize: 13),
-                    ),
-
-                    _sectionTitle('Severity'),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        for (final option in [
-                          ('Mild', 'low'),
-                          ('Moderate', 'moderate'),
-                          ('Severe', 'high'),
-                        ])
-                          _choice(
-                            label: option.$1,
-                            selected: _severity == option.$2,
-                            onTap: () => setState(() => _severity = option.$2),
-                          ),
-                        _choice(
-                          label: 'Skip',
-                          selected: _severity == null,
-                          onTap: () => setState(() => _severity = null),
-                        ),
-                      ],
-                    ),
-
-                    _sectionTitle('Duration'),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _durationController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                RegExp(r'[0-9.]'),
-                              ),
-                            ],
-                            onChanged: (_) => setState(() {}),
-                            decoration: InputDecoration(
-                              hintText: 'e.g. 3',
-                              filled: true,
-                              fillColor: Colors.white,
-                              errorText: _durationValid
-                                  ? null
-                                  : 'Invalid number',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        DropdownButton<String>(
-                          value: _durationUnit,
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'hours',
-                              child: Text('Hours'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'days',
-                              child: Text('Days'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'weeks',
-                              child: Text('Weeks'),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _durationUnit = value;
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    if (_durationOriginalText != null) ...[
-                      const SizedBox(height: 5),
-                      Text(
-                        'Detected wording: $_durationOriginalText',
-                        style: GoogleFonts.reemKufi(fontSize: 12, color: brown),
-                      ),
-                    ],
-                    if (_durationHours() != null) ...[
-                      const SizedBox(height: 5),
-                      Text(
-                        'Stored as: ${_formatNumber(_durationHours()!)} hours',
-                        style: GoogleFonts.reemKufi(fontSize: 12, color: brown),
-                      ),
-                    ],
-
-                    _sectionTitle('Onset'),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        for (final option in [
-                          ('Sudden', 'sudden'),
-                          ('Gradual', 'gradual'),
-                        ])
-                          _choice(
-                            label: option.$1,
-                            selected: _onset == option.$2,
-                            onTap: () => setState(() => _onset = option.$2),
-                          ),
-                        _choice(
-                          label: 'Skip',
-                          selected: _onset == null,
-                          onTap: () => setState(() => _onset = null),
-                        ),
-                      ],
-                    ),
-
-                    _sectionTitle('Progression'),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        for (final option in [
-                          ('Getting worse', 'worse'),
-                          ('Persistent', 'persistent'),
-                          ('Comes and goes', 'intermittent'),
-                          ('Getting better', 'better'),
-                        ])
-                          _choice(
-                            label: option.$1,
-                            selected: _progression == option.$2,
-                            onTap: () =>
-                                setState(() => _progression = option.$2),
-                          ),
-                        _choice(
-                          label: 'Skip',
-                          selected: _progression == null,
-                          onTap: () => setState(() => _progression = null),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-                  ],
-                ),
-              ),
-              Row(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const StrokeBackground(),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const MataCornerLogo(),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      for (var i = 0; i < _symptoms.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 4),
+                        Container(
+                          width: 22,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: i <= _index
+                                ? brown
+                                : brown.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 10),
+                      Text(
+                        'SYMPTOM ${_index + 1} OF ${_symptoms.length}',
+                        style: MataText.body(
+                          color: MataColors.faint,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Symptom Details', style: MataText.display(fontSize: 26)),
+                  const SizedBox(height: 14),
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: _saving ? null : _back,
-                      child: const Text('Back'),
+                    child: ListView(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      children: [
+                        MataGlass(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _displayName,
+                                style: MataText.display(
+                                  color: brown,
+                                  fontSize: 22,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'All details are optional. '
+                                'Review or change any information '
+                                'we found in your description.',
+                                style: MataText.body(
+                                  color: const Color(0xFF7A6458),
+                                  fontSize: 12.5,
+                                  height: 1.45,
+                                ),
+                              ),
+                                _sectionTitle('Severity'),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    for (final option in [
+                                      ('Mild', 'low'),
+                                      ('Moderate', 'moderate'),
+                                      ('Severe', 'high'),
+                                    ])
+                                      _choice(
+                                        label: option.$1,
+                                        selected: _severity == option.$2,
+                                        onTap: () => setState(() => _severity = option.$2),
+                                      ),
+                                    _choice(
+                                      label: 'Skip',
+                                      selected: _severity == null,
+                                      onTap: () => setState(() => _severity = null),
+                                    ),
+                                  ],
+                                ),
+
+                                _sectionTitle('Duration'),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _durationController,
+                                        keyboardType: const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9.]'),
+                                          ),
+                                        ],
+                                        onChanged: (_) => setState(() {}),
+                                        style: MataText.body(fontSize: 15),
+                                        decoration: MataFields.light(hintText: 'e.g. 3')
+                                            .copyWith(
+                                              errorText: _durationValid
+                                                  ? null
+                                                  : 'Invalid number',
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    DropdownButton<String>(
+                                      value: _durationUnit,
+                                      style: MataText.body(fontSize: 15),
+                                      borderRadius: BorderRadius.circular(14),
+                                      dropdownColor: MataColors.softWhite,
+                                      underline: const SizedBox.shrink(),
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'hours',
+                                          child: Text('Hours'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'days',
+                                          child: Text('Days'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'weeks',
+                                          child: Text('Weeks'),
+                                        ),
+                                      ],
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _durationUnit = value;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                if (_durationOriginalText != null) ...[
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    'Detected wording: $_durationOriginalText',
+                                    style: MataText.body(fontSize: 12, color: MataColors.faint),
+                                  ),
+                                ],
+                                if (_durationHours() != null) ...[
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    'Stored as: ${_formatNumber(_durationHours()!)} hours',
+                                    style: MataText.body(fontSize: 12, color: MataColors.faint),
+                                  ),
+                                ],
+
+                                _sectionTitle('Onset'),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    for (final option in [
+                                      ('Sudden', 'sudden'),
+                                      ('Gradual', 'gradual'),
+                                    ])
+                                      _choice(
+                                        label: option.$1,
+                                        selected: _onset == option.$2,
+                                        onTap: () => setState(() => _onset = option.$2),
+                                      ),
+                                    _choice(
+                                      label: 'Skip',
+                                      selected: _onset == null,
+                                      onTap: () => setState(() => _onset = null),
+                                    ),
+                                  ],
+                                ),
+
+                                _sectionTitle('Progression'),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    for (final option in [
+                                      ('Getting worse', 'worse'),
+                                      ('Persistent', 'persistent'),
+                                      ('Comes and goes', 'intermittent'),
+                                      ('Getting better', 'better'),
+                                    ])
+                                      _choice(
+                                        label: option.$1,
+                                        selected: _progression == option.$2,
+                                        onTap: () =>
+                                            setState(() => _progression = option.$2),
+                                      ),
+                                    _choice(
+                                      label: 'Skip',
+                                      selected: _progression == null,
+                                      onTap: () => setState(() => _progression = null),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _saving || !_durationValid ? null : _next,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: darkBrown,
-                        foregroundColor: Colors.white,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: MataButton(
+                          label: 'Back',
+                          style: MataButtonStyle.line,
+                          onPressed: _saving ? null : _back,
+                        ),
                       ),
-                      child: Text(
-                        _saving
-                            ? 'Saving...'
-                            : _index == _symptoms.length - 1
-                            ? 'Finish'
-                            : 'Next Symptom',
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: MataButton(
+                          label: _saving
+                              ? 'Saving...'
+                              : _index == _symptoms.length - 1
+                              ? 'Finish'
+                              : 'Next Symptom',
+                          onPressed: _saving || !_durationValid ? null : _next,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
