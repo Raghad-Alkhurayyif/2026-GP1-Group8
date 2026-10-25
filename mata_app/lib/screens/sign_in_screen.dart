@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
+import '../theme/mata_theme.dart';
+import '../widgets/road_scene.dart';
 import 'sign_up_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -14,10 +15,8 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  static const Color brown = Color(0xFF79543B);
-  static const Color fieldLine = Color(0xFFB99A7B);
-  static const Color hintColor = Color(0xFF929292);
-  static const Color backgroundColor = Color(0xFFF8F5EF);
+  static const Color softWhite = MataColors.softWhite;
+  static const Color backgroundColor = Color(0xFF1E1517);
 
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -79,243 +78,182 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.sizeOf(context);
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/welcome_background.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned(
-            top: screenSize.height * 0.06,
-            //right: 0,
-            right: 40,
-            child: SizedBox(
-              // width: screenSize.width,
-              width: 370,
-              child: Image.asset(
-                'assets/images/mata_logo.png',
-                fit: BoxFit.fitWidth,
+          // the same twilight as the welcome screen, the horizon drawn higher
+          const Positioned.fill(child: RoadScene(mood: RoadMood.signIn)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+              child: MataBackButton(
+                night: true,
+                onTap: () => Navigator.of(context).maybePop(),
               ),
             ),
           ),
-          Positioned.fill(
-            top: screenSize.height * 0.27,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: backgroundColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(38)),
-              ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.bottomCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(32, 34, 32, 32),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'SIGN IN',
-                        textAlign: TextAlign.left,
-                        style: GoogleFonts.reemKufi(
-                          color: brown,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w600,
-                          shadows: const [
-                            Shadow(
-                              color: Color(0x40000000),
-                              offset: Offset(0, 3),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 34),
-                      _buildLabel('Email Address'),
-                      TextFormField(
-                        controller: _emailController,
-                        onChanged: (_) {
-                          if (_errorMessage != null) {
-                            setState(() {
-                              _errorMessage = null;
-                            });
-                          }
-                        },
-                        keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        style: GoogleFonts.reemKufi(color: brown, fontSize: 16),
-                        textAlignVertical: TextAlignVertical.bottom,
-                        decoration: _fieldDecoration(
-                          hintText: 'user123@gmail.com',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Email is required.';
-                          }
-
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 28),
-                      _buildLabel('Password'),
-                      TextFormField(
-                        controller: _passwordController,
-                        onChanged: (_) {
-                          if (_errorMessage != null) {
-                            setState(() {
-                              _errorMessage = null;
-                            });
-                          }
-                        },
-                        obscureText: _hidePassword,
-                        style: GoogleFonts.reemKufi(color: brown, fontSize: 16),
-                        textAlignVertical: TextAlignVertical.bottom,
-                        decoration: _fieldDecoration(
-                          hintText: '**********',
-                          suffixIcon: IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints.tightFor(
-                              width: 40,
-                              height: 40,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _hidePassword = !_hidePassword;
-                              });
-                            },
-                            icon: Icon(
-                              _hidePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              color: brown,
-                            ),
+                padding: const EdgeInsets.fromLTRB(10, 64, 10, 10),
+                child: MataNightSheet(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Welcome back',
+                          style: MataText.display(
+                            color: softWhite,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w500,
+                            height: 1.15,
                           ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password is required.';
-                          }
-
-                          return null;
-                        },
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ForgotPasswordScreen(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            'Forgot password?',
-                            style: GoogleFonts.reemKufi(
-                              color: brown,
-                              fontSize: 15,
-                              decoration: TextDecoration.underline,
-                              decorationColor: brown,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (_errorMessage != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.reemKufi(
-                            color: Colors.red.shade700,
+                          'Sign in to continue your check-ins.',
+                          style: MataText.body(
+                            color: softWhite.withValues(alpha: 0.7),
                             fontSize: 13,
                           ),
                         ),
-                      ],
-                      const SizedBox(height: 30),
-                      GestureDetector(
-                        onTap: _isLoading ? null : _signIn,
-                        child: Opacity(
-                          opacity: _isLoading ? 0.6 : 1,
-                          child: Container(
-                            height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(30),
-                              image: const DecorationImage(
-                                image: AssetImage(
-                                  'assets/images/'
-                                  'sign_in_button_background.png',
-                                ),
-                                fit: BoxFit.fill,
-                              ),
-                              border: Border.all(
-                                color: backgroundColor,
-                                width: 2,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 23,
-                                    height: 23,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : Transform.translate(
-                                    offset: const Offset(0, -3),
-                                    child: Text(
-                                      'Sign in',
-                                      style: GoogleFonts.reemKufi(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
+                        const SizedBox(height: 18),
+                        _buildLabel('Email Address'),
+                        TextFormField(
+                          controller: _emailController,
+                          onChanged: (_) {
+                            if (_errorMessage != null) {
+                              setState(() {
+                                _errorMessage = null;
+                              });
+                            }
+                          },
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          style: _fieldTextStyle,
+                          cursorColor: softWhite,
+                          decoration: _fieldDecoration(
+                            hintText: 'user123@gmail.com',
                           ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Email is required.';
+                            }
+
+                            return null;
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Don’t Have An Account? ',
-                            style: GoogleFonts.reemKufi(
-                              color: brown,
-                              fontSize: 15,
+                        const SizedBox(height: 14),
+                        _buildLabel('Password'),
+                        TextFormField(
+                          controller: _passwordController,
+                          onChanged: (_) {
+                            if (_errorMessage != null) {
+                              setState(() {
+                                _errorMessage = null;
+                              });
+                            }
+                          },
+                          obscureText: _hidePassword,
+                          style: _fieldTextStyle,
+                          cursorColor: softWhite,
+                          decoration: _fieldDecoration(
+                            hintText: '••••••••',
+                            suffixIcon: IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints.tightFor(
+                                width: 40,
+                                height: 40,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _hidePassword = !_hidePassword;
+                                });
+                              },
+                              icon: Icon(
+                                _hidePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: softWhite.withValues(alpha: 0.7),
+                                size: 20,
+                              ),
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () {
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Password is required.';
+                            }
+
+                            return null;
+                          },
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const SignUpScreen(),
+                                  builder: (context) =>
+                                      const ForgotPasswordScreen(),
                                 ),
                               );
                             },
                             child: Text(
-                              'Sign Up',
-                              style: GoogleFonts.reemKufi(
-                                color: brown,
-                                fontSize: 15,
-                                decoration: TextDecoration.underline,
-                                decorationColor: brown,
-                              ),
+                              'Forgot password?',
+                              style: _linkStyle,
                             ),
                           ),
+                        ),
+                        if (_errorMessage != null) ...[
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: MataText.body(
+                              color: const Color(0xFFFF9C8C),
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
                         ],
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        MataButton(
+                          label: 'Sign in',
+                          style: MataButtonStyle.cream,
+                          loading: _isLoading,
+                          onPressed: _isLoading ? null : _signIn,
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'New here? ',
+                              style: MataText.body(
+                                color: softWhite.withValues(alpha: 0.7),
+                                fontSize: 13,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignUpScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text('Sign Up', style: _linkStyle),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -326,40 +264,22 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.reemKufi(
-        color: brown,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
+  TextStyle get _fieldTextStyle =>
+      MataText.body(color: softWhite, fontSize: 15, height: 1.3);
+
+  TextStyle get _linkStyle => MataText.body(
+    color: softWhite.withValues(alpha: 0.9),
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    decoration: TextDecoration.underline,
+  );
+
+  Widget _buildLabel(String text) => MataLabel(text, night: true);
 
   InputDecoration _fieldDecoration({
     required String hintText,
     Widget? suffixIcon,
   }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: GoogleFonts.reemKufi(color: hintColor, fontSize: 16),
-      suffixIcon: suffixIcon,
-      isDense: true,
-      contentPadding: const EdgeInsets.only(top: 22, bottom: 1),
-      suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-      enabledBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: fieldLine, width: 1.5),
-      ),
-      focusedBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: brown, width: 2),
-      ),
-      errorBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: Colors.red, width: 2),
-      ),
-    );
+    return MataFields.night(hintText: hintText, suffixIcon: suffixIcon);
   }
 }
