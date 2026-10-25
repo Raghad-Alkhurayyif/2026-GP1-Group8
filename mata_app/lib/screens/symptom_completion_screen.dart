@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../theme/mata_theme.dart';
+import '../widgets/stroke_background.dart';
 
 class SymptomCompletionScreen extends StatelessWidget {
   const SymptomCompletionScreen({super.key});
 
   static const Color brown = Color(0xFF79543B);
-  static const Color darkBrown = Color(0xFF5C3F38);
   static const Color softBeige = Color(0xFFF7F3EB);
-  static const Color borderColor = Color(0xFFDCCDB5);
 
   void _returnHome(BuildContext context) {
     Navigator.of(context).popUntil((route) => route.isFirst);
@@ -17,143 +17,117 @@ class SymptomCompletionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: softBeige,
-      body: SafeArea(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset('assets/images/background.png', fit: BoxFit.cover),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const StrokeBackground(),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 20),
               child: Column(
                 children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: MataCornerLogo(),
+                  ),
                   const Spacer(),
-
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 96,
+                    height: 96,
                     decoration: BoxDecoration(
-                      color: brown.withValues(alpha: 0.10),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: brown.withValues(alpha: 0.25),
-                        width: 2,
-                      ),
+                      color: MataColors.softWhite.withValues(alpha: 0.8),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0xCCFFF4E4), blurRadius: 50),
+                        BoxShadow(
+                          color: Color(0x4D79543B),
+                          blurRadius: 30,
+                          spreadRadius: -12,
+                          offset: Offset(0, 14),
+                        ),
+                      ],
                     ),
                     child: const Icon(
-                      Icons.check_circle_outline_rounded,
+                      Icons.check_rounded,
                       color: brown,
-                      size: 65,
+                      size: 48,
                     ),
                   ),
-
-                  const SizedBox(height: 25),
-
+                  const SizedBox(height: 24),
                   Text(
                     'Symptoms Confirmed!',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.reemKufi(
-                      fontSize: 27,
-                      fontWeight: FontWeight.w700,
-                      color: darkBrown,
-                    ),
+                    style: MataText.display(fontSize: 27),
                   ),
-
-                  const SizedBox(height: 12),
-
+                  const SizedBox(height: 8),
                   Text(
                     'Your symptoms and their details '
                     'have been saved successfully.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.reemKufi(
-                      fontSize: 15,
-                      height: 1.7,
-                      color: brown,
+                    style: MataText.body(
+                      fontSize: 14,
+                      height: 1.6,
+                      color: MataColors.muted,
                     ),
                   ),
-
-                  const SizedBox(height: 30),
-
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.90),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: borderColor),
+                  const SizedBox(height: 26),
+                  MataGlass(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 6,
                     ),
                     child: Column(
                       children: [
                         _completedRow('Symptom review'),
-                        const SizedBox(height: 16),
+                        Divider(
+                          height: 1,
+                          color: brown.withValues(alpha: 0.12),
+                        ),
                         _completedRow('Symptom details'),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 22),
-
+                  const SizedBox(height: 18),
                   Text(
                     'The remaining assessment steps '
                     'are under development.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.reemKufi(
-                      color: brown,
-                      fontSize: 13,
-                      height: 1.6,
+                    style: MataText.body(
+                      color: MataColors.faint,
+                      fontSize: 12.5,
+                      height: 1.5,
                     ),
                   ),
-
                   const Spacer(),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () => _returnHome(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: darkBrown,
-                        foregroundColor: softBeige,
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      child: Text(
-                        'Return to Home',
-                        style: GoogleFonts.reemKufi(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  MataButton(
+                    label: 'Return to Home',
+                    onPressed: () => _returnHome(context),
                   ),
-
-                  const SizedBox(height: 12),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _completedRow(String title) {
-    return Row(
-      children: [
-        const Icon(Icons.check_circle_rounded, color: brown, size: 23),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            title,
-            style: GoogleFonts.reemKufi(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: darkBrown,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: brown, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: MataText.body(fontSize: 14.5, fontWeight: FontWeight.w500),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

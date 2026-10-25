@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../theme/mata_theme.dart';
 
 class MataBottomNavigationBar extends StatelessWidget {
   const MataBottomNavigationBar({
@@ -15,50 +18,58 @@ class MataBottomNavigationBar extends StatelessWidget {
   final VoidCallback? onHistoryTap;
   final VoidCallback onAccountTap;
 
-  static const Color barColor = Color(0xFF5C3F38);
-  static const Color selectedColor = Color(0xFF705D59);
-  static const Color iconColor = Color(0xFFDCCDB5);
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 65,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
+    final shape = BorderRadius.circular(22);
+
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: barColor,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: shape,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: MataColors.cocoa.withValues(alpha: 0.5),
+            blurRadius: 30,
+            spreadRadius: -14,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          _NavigationItem(
-            icon: Icons.home_outlined,
-            label: 'Home',
-            selected: currentIndex == 0,
-            onTap: onHomeTap,
+      child: ClipRRect(
+        borderRadius: shape,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            height: 62,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: MataColors.softWhite.withValues(alpha: 0.7),
+              borderRadius: shape,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+            ),
+            child: Row(
+              children: [
+                _NavigationItem(
+                  icon: Icons.home_outlined,
+                  label: 'Home',
+                  selected: currentIndex == 0,
+                  onTap: onHomeTap,
+                ),
+                _NavigationItem(
+                  icon: Icons.access_time_rounded,
+                  label: 'History',
+                  selected: currentIndex == 1,
+                  onTap: onHistoryTap,
+                ),
+                _NavigationItem(
+                  icon: Icons.person_outline_rounded,
+                  label: 'Account',
+                  selected: currentIndex == 2,
+                  onTap: onAccountTap,
+                ),
+              ],
+            ),
           ),
-          _NavigationItem(
-            icon: Icons.access_time_rounded,
-            label: 'History',
-            selected: currentIndex == 1,
-            onTap: onHistoryTap,
-          ),
-          _NavigationItem(
-            icon: Icons.person_outline_rounded,
-            label: 'Account',
-            selected: currentIndex == 2,
-            onTap: onAccountTap,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -79,39 +90,27 @@ class _NavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = selected ? MataColors.brown : MataColors.faint;
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: selected
-                ? MataBottomNavigationBar.selectedColor
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: MataBottomNavigationBar.iconColor,
-                size: 29,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: MataText.body(
+                color: color,
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                height: 1.2,
               ),
-              if (selected) ...[
-                const SizedBox(width: 7),
-                Text(
-                  label,
-                  style: GoogleFonts.reemKufi(
-                    color: MataBottomNavigationBar.iconColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

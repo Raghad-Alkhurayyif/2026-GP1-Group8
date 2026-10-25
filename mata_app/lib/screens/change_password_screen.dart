@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
+import '../theme/mata_theme.dart';
 import '../widgets/sos_button.dart';
+import '../widgets/stroke_background.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -13,11 +14,7 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  static const Color brown = Color(0xFF79543B);
-  static const Color darkBrown = Color(0xFF5C3F38);
   static const Color softBeige = Color(0xFFF7F3EB);
-  static const Color borderColor = Color(0xFFDCCDB5);
-  static const Color hintGray = Color(0xFF929292);
   static const Color red = Color(0xFFB71616);
 
   final AuthService _authService = AuthService();
@@ -173,57 +170,35 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/background.png', fit: BoxFit.cover),
+          const StrokeBackground(),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 10, 28, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Transform.translate(
-                    offset: const Offset(-28, -17),
-                    child: Image.asset(
-                      'assets/images/mata_logo.png',
-                      width: 90,
-                      height: 55,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                  const MataCornerLogo(),
                   const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: darkBrown,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Text(
-                        'Change Password',
-                        style: GoogleFonts.reemKufi(
-                          color: darkBrown,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  MataBackButton(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Change Password',
+                    style: MataText.display(fontSize: 26),
+                  ),
+                  const SizedBox(height: 18),
                   Expanded(
                     child: SingleChildScrollView(
-                      child: Column(
+                      child: MataGlass(
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _FieldLabel(text: 'Current Password'),
-                          const SizedBox(height: 8),
-                          _PasswordField(
+                                                    _PasswordField(
                             controller: _currentPasswordController,
                             hintText: 'Enter your current password',
                             obscureText: !_showCurrentPassword,
@@ -234,10 +209,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               });
                             },
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 14),
                           _FieldLabel(text: 'New Password'),
-                          const SizedBox(height: 8),
-                          _PasswordField(
+                                                    _PasswordField(
                             controller: _newPasswordController,
                             hintText: 'Enter your new password',
                             obscureText: !_showNewPassword,
@@ -267,8 +241,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           ),
                           const SizedBox(height: 20),
                           _FieldLabel(text: 'Confirm New Password'),
-                          const SizedBox(height: 8),
-                          _PasswordField(
+                                                    _PasswordField(
                             controller: _confirmPasswordController,
                             hintText: 'Confirm your new password',
                             obscureText: !_showConfirmPassword,
@@ -283,49 +256,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             const SizedBox(height: 16),
                             Text(
                               _errorMessage!,
-                              style: GoogleFonts.reemKufi(
+                              style: MataText.body(
                                 color: red,
                                 fontSize: 13,
                               ),
                             ),
                           ],
-                          const SizedBox(height: 30),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 58,
-                            child: ElevatedButton(
-                              onPressed: _isSaving ? null : _changePassword,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: darkBrown,
-                                foregroundColor: softBeige,
-                                disabledBackgroundColor: brown,
-                                elevation: 5,
-                                shadowColor: Colors.black.withValues(
-                                  alpha: 0.25,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(29),
-                                ),
-                              ),
-                              child: _isSaving
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: softBeige,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : Text(
-                                      'CHANGE PASSWORD',
-                                      style: GoogleFonts.reemKufi(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                            ),
+                          const SizedBox(height: 22),
+                          MataButton(
+                            label: 'Change Password',
+                            loading: _isSaving,
+                            onPressed: _isSaving ? null : _changePassword,
                           ),
                         ],
+                        ),
                       ),
                     ),
                   ),
@@ -333,7 +277,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
             ),
           ),
-          Positioned(right: 28, bottom: 105, child: SosButton(onTap: () {})),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, right: 22),
+                child: SosButton(onTap: () {}),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -347,14 +299,7 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: GoogleFonts.reemKufi(
-        color: _ChangePasswordScreenState.darkBrown,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return MataLabel(text);
   }
 }
 
@@ -379,43 +324,17 @@ class _PasswordField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       onChanged: onChanged,
-      style: GoogleFonts.reemKufi(
-        color: _ChangePasswordScreenState.darkBrown,
-        fontSize: 15,
-      ),
-      decoration: InputDecoration(
+      style: MataText.body(fontSize: 15),
+      decoration: MataFields.light(
         hintText: hintText,
-        hintStyle: GoogleFonts.reemKufi(
-          color: _ChangePasswordScreenState.hintGray,
-          fontSize: 15,
-        ),
-        filled: true,
-        fillColor: _ChangePasswordScreenState.softBeige,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 17,
-        ),
         suffixIcon: IconButton(
           onPressed: onVisibilityPressed,
           icon: Icon(
             obscureText
                 ? Icons.visibility_off_outlined
                 : Icons.visibility_outlined,
-            color: _ChangePasswordScreenState.brown,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: _ChangePasswordScreenState.borderColor,
-            width: 1.3,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: _ChangePasswordScreenState.brown,
-            width: 1.8,
+            color: MataColors.faint,
+            size: 20,
           ),
         ),
       ),
@@ -439,19 +358,16 @@ class _PasswordRule extends StatelessWidget {
             isMet
                 ? Icons.check_circle_rounded
                 : Icons.radio_button_unchecked_rounded,
-            color: isMet
-                ? _ChangePasswordScreenState.darkBrown
-                : _ChangePasswordScreenState.hintGray,
-            size: 18,
+            color: isMet ? MataColors.brown : MataColors.hint,
+            size: 16,
           ),
           const SizedBox(width: 8),
           Text(
             text,
-            style: GoogleFonts.reemKufi(
-              color: isMet
-                  ? _ChangePasswordScreenState.darkBrown
-                  : _ChangePasswordScreenState.hintGray,
+            style: MataText.body(
+              color: isMet ? MataColors.brown : MataColors.hint,
               fontSize: 12,
+              fontWeight: isMet ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
         ],

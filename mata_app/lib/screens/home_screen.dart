@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/symptom_api_service.dart';
+import '../theme/mata_theme.dart';
+import '../widgets/road_scene.dart';
+import '../widgets/stroke_background.dart';
 import '../widgets/mata_bottom_navigation_bar.dart';
 import '../widgets/sos_button.dart';
 import 'account_screen.dart';
@@ -19,10 +21,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const Color brown = Color(0xFF79543B);
-  static const Color darkBrown = Color(0xFF5C3F38);
   static const Color red = Color(0xFFB71616);
   static const Color inputBackground = Color(0xFFF7F3EB);
-  static const Color hintColor = Color(0xFF929292);
 
   final TextEditingController _symptomsController = TextEditingController();
   final AssessmentService _assessmentService = AssessmentService();
@@ -99,193 +99,136 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/background.png', fit: BoxFit.cover),
+          const StrokeBackground(),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 14, 28, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Transform.translate(
-                    offset: const Offset(-28, -17),
-                    child: Image.asset(
-                      'assets/images/mata_logo.png',
-                      width: 90,
-                      height: 55,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+                  const MataCornerLogo(),
+                  const SizedBox(height: 34),
                   RichText(
                     text: TextSpan(
-                      style: GoogleFonts.reemKufi(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                      ),
+                      style: MataText.display(fontSize: 30, height: 1.2),
                       children: const [
-                        TextSpan(
-                          text: "Tell us what you're\n",
-                          style: TextStyle(color: Colors.black),
-                        ),
+                        TextSpan(text: "Tell us what you're\n"),
                         TextSpan(
                           text: 'experiencing',
-                          style: TextStyle(color: darkBrown),
+                          style: TextStyle(color: brown),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   Text(
-                    'Describe your symptoms in your own words.\n'
-                    'Include what you feel, where you feel it, and any\n'
+                    'Describe your symptoms in your own words. '
+                    'Include what you feel, where you feel it, and any '
                     'other details you think are important.',
-                    style: GoogleFonts.reemKufi(
-                      color: brown,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 1.8,
+                    style: MataText.body(
+                      color: MataColors.muted,
+                      fontSize: 14.5,
+                      height: 1.6,
                     ),
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 22),
                   SizedBox(
-                    height: 265,
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: inputBackground,
-                            borderRadius: BorderRadius.circular(30),
-                            border: _showError
-                                ? Border.all(color: red, width: 2)
-                                : null,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 14,
-                                offset: const Offset(0, 7),
-                              ),
-                            ],
+                    height: 230,
+                    child: MataGlass(
+                      glow: true,
+                      radius: 26,
+                      opacity: 0.72,
+                      padding: EdgeInsets.zero,
+                      borderColor: _showError ? red : null,
+                      child: TextField(
+                        controller: _symptomsController,
+                        expands: true,
+                        maxLines: null,
+                        minLines: null,
+                        textAlignVertical: TextAlignVertical.top,
+                        keyboardType: TextInputType.multiline,
+                        onChanged: (value) {
+                          if (_showError && value.trim().isNotEmpty) {
+                            setState(() {
+                              _showError = false;
+                            });
+                          }
+                        },
+                        style: MataText.body(
+                          color: MataColors.ink,
+                          fontSize: 15,
+                          height: 1.65,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              "For example: I've had a strong headache "
+                              'since this morning and I feel dizzy when I '
+                              'stand up...',
+                          hintStyle: MataText.body(
+                            color: MataColors.hint,
+                            fontSize: 15,
+                            height: 1.65,
                           ),
-                          child: TextField(
-                            controller: _symptomsController,
-                            expands: true,
-                            maxLines: null,
-                            minLines: null,
-                            textAlignVertical: TextAlignVertical.top,
-                            keyboardType: TextInputType.multiline,
-                            onChanged: (value) {
-                              if (_showError && value.trim().isNotEmpty) {
-                                setState(() {
-                                  _showError = false;
-                                });
-                              }
-                            },
-                            style: GoogleFonts.reemKufi(
-                              color: darkBrown,
-                              fontSize: 15,
-                              height: 1.7,
-                            ),
-                            decoration: InputDecoration(
-                              hintText:
-                                  "For example: I've had a strong headache\n"
-                                  'since this morning and I feel dizzy when I\n'
-                                  'stand up...',
-                              hintStyle: GoogleFonts.reemKufi(
-                                color: hintColor,
-                                fontSize: 14,
-                                height: 1.8,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.fromLTRB(
-                                28,
-                                28,
-                                28,
-                                75,
-                              ),
-                            ),
+                          hintMaxLines: 4,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            20,
+                            18,
+                            20,
+                            18,
                           ),
                         ),
-                        Positioned(
-                          right: 18,
-                          bottom: 18,
-                          child: SizedBox(
-                            width: 130,
-                            height: 44,
-                            child: ElevatedButton(
-                              onPressed: _isSubmitting ? null : _submitSymptoms,
-                              style: ElevatedButton.styleFrom(
-                                elevation: 5,
-                                backgroundColor: darkBrown,
-                                foregroundColor: inputBackground,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              child: _isSubmitting
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        color: inputBackground,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : Text(
-                                      'Submit',
-                                      style: GoogleFonts.reemKufi(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                   SizedBox(
-                    height: 62,
+                    height: 46,
                     child: _showError
                         ? Padding(
-                            padding: const EdgeInsets.only(top: 14, left: 4),
+                            padding: const EdgeInsets.only(top: 12, left: 4),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(
                                   Icons.info_outline_rounded,
                                   color: red,
-                                  size: 25,
+                                  size: 20,
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Symptoms required',
-                                        style: GoogleFonts.reemKufi(
-                                          color: red,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: 'Symptoms required. ',
+                                          style: MataText.body(
+                                            color: red,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
-                                      ),
-                                      Text(
-                                        'Please describe your symptoms '
-                                        'before submitting.',
-                                        style: GoogleFonts.reemKufi(
-                                          color: red,
-                                          fontSize: 10,
+                                        TextSpan(
+                                          text:
+                                              'Please describe your symptoms '
+                                              'before submitting.',
+                                          style: MataText.body(
+                                            color: red,
+                                            fontSize: 13,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           )
                         : null,
+                  ),
+                  MataButton(
+                    label: 'Submit',
+                    loading: _isSubmitting,
+                    onPressed: _isSubmitting ? null : _submitSymptoms,
                   ),
                   const Spacer(),
                   MataBottomNavigationBar(
@@ -304,7 +247,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          Positioned(right: 28, bottom: 105, child: SosButton(onTap: () {})),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, right: 22),
+                child: SosButton(onTap: () {}),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -327,7 +278,6 @@ class AnalyzingScreen extends StatefulWidget {
 
 class _AnalyzingScreenState extends State<AnalyzingScreen> {
   static const Color brown = Color(0xFF79543B);
-  static const Color darkBrown = Color(0xFF5C3F38);
   static const Color inputBackground = Color(0xFFF7F3EB);
   static const Color red = Color(0xFFB71616);
 
@@ -542,145 +492,138 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/background.png', fit: BoxFit.cover),
+          // the guiding path, its lights coming on one by one while we read
+          const RoadScene(mood: RoadMood.analyzing),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(30, 14, 30, 28),
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Transform.translate(
-                    offset: const Offset(-28, -17),
-                    child: Image.asset(
-                      'assets/images/mata_logo.png',
-                      width: 90,
-                      height: 55,
-                      fit: BoxFit.contain,
+                  const MataCornerLogo(),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'Analyzing your\nsymptoms...',
+                      textAlign: TextAlign.center,
+                      style: MataText.display(fontSize: 28, height: 1.25),
                     ),
                   ),
-                  const SizedBox(height: 35),
-                  Text(
-                    'Analyzing your\nsymptoms...',
-                    style: GoogleFonts.reemKufi(
-                      color: Colors.black,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      "Ma'ta is reviewing your symptoms "
+                      'to prepare your assessment.',
+                      textAlign: TextAlign.center,
+                      style: MataText.body(
+                        color: MataColors.muted,
+                        fontSize: 14,
+                        height: 1.6,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Ma'ta is reviewing your symptoms "
-                    'to prepare your assessment.',
-                    style: GoogleFonts.reemKufi(
-                      color: brown,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 1.8,
-                    ),
-                  ),
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 18),
                   if (_errorMessage == null)
                     _buildLoadingContent()
                   else
                     _buildErrorContent(),
-                  const Spacer(),
                 ],
               ),
             ),
           ),
-          Positioned(right: 28, bottom: 105, child: SosButton(onTap: () {})),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, right: 22),
+                child: SosButton(onTap: () {}),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildLoadingContent() {
-    return Column(
-      children: [
-        const Center(
-          child: SizedBox(
-            width: 145,
-            height: 145,
-            child: CircularProgressIndicator(
-              color: darkBrown,
-              backgroundColor: Color(0xFFB8A79D),
-              strokeWidth: 20,
-              strokeCap: StrokeCap.round,
+    return Expanded(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              '“${widget.description}”',
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: MataText.body(
+                color: MataColors.muted,
+                fontSize: 13.5,
+                height: 1.6,
+              ).copyWith(fontStyle: FontStyle.italic),
             ),
           ),
-        ),
-        const SizedBox(height: 55),
-        Center(
-          child: Text(
-            'This usually takes a few seconds.\n'
-            'Please don’t close the app.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.reemKufi(
-              color: brown,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.8,
+          const Spacer(),
+          MataGlass(
+            radius: 18,
+            opacity: 0.6,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            child: Text(
+              'This usually takes a few seconds.\n'
+              'Please don’t close the app.',
+              textAlign: TextAlign.center,
+              style: MataText.body(
+                color: MataColors.cocoa,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.55,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildErrorContent() {
-    return Center(
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline_rounded, color: red, size: 54),
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.reemKufi(
-              color: red,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 22),
-          SizedBox(
-            width: 150,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _analyzeSymptoms,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: darkBrown,
-                foregroundColor: inputBackground,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: MataGlass(
+        glow: true,
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: red, size: 40),
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: MataText.body(
+                color: MataColors.ink,
+                fontSize: 14.5,
+                height: 1.6,
               ),
+            ),
+            const SizedBox(height: 20),
+            MataButton(label: 'Try Again', onPressed: _analyzeSymptoms),
+            const SizedBox(height: 6),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
               child: Text(
-                'Try Again',
-                style: GoogleFonts.reemKufi(
+                'Back',
+                style: MataText.body(
+                  color: brown,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text(
-              'Back',
-              style: GoogleFonts.reemKufi(
-                color: brown,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
