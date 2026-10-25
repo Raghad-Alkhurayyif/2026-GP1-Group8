@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../theme/mata_theme.dart';
 import '../widgets/sos_button.dart';
+import '../widgets/stroke_background.dart';
 
 import 'package:flutter/services.dart';
 
@@ -23,9 +24,7 @@ class FollowUpQuestionsScreen extends StatefulWidget {
 
 class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
   static const Color brown = Color(0xFF79543B);
-  static const Color darkBrown = Color(0xFF5C3F38);
   static const Color softBeige = Color(0xFFF7F3EB);
-  static const Color borderColor = Color(0xFFDCCDB5);
 
   late final List<_FollowUpQuestion> _questions;
 
@@ -124,26 +123,21 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/background.png', fit: BoxFit.cover),
+          const StrokeBackground(),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 14, 28, 24),
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context),
-                  const SizedBox(height: 12),
-                  _buildTitle(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
                   _buildProgressIndicator(),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 10),
+                  _buildTitle(),
+                  const SizedBox(height: 16),
                   Expanded(child: _buildQuestionList()),
-                  const SizedBox(height: 14),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SosButton(onTap: () {}),
-                  ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
                   _buildContinueButton(),
                 ],
               ),
@@ -156,37 +150,23 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return SizedBox(
-      height: 80,
+      width: double.infinity,
+      height: 92,
       child: Stack(
         children: [
-          Transform.translate(
-            offset: const Offset(-28, -17),
-            child: Image.asset(
-              'assets/images/mata_logo.png',
-              width: 90,
-              height: 55,
-              fit: BoxFit.contain,
-            ),
+          const MataCornerLogo(),
+          Positioned(
+            right: 0,
+            top: -2,
+            child: SosButton(onTap: () {}),
           ),
           Positioned(
             left: 0,
-            bottom: 0,
-            child: TextButton.icon(
-              onPressed: () {
+            bottom: 4,
+            child: MataBackButton(
+              onTap: () {
                 Navigator.of(context).pop();
               },
-              style: TextButton.styleFrom(
-                foregroundColor: brown,
-                padding: EdgeInsets.zero,
-              ),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-              label: Text(
-                'Back',
-                style: GoogleFonts.reemKufi(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
         ],
@@ -198,22 +178,14 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'A few more details',
-          style: GoogleFonts.reemKufi(
-            color: Colors.black,
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-            height: 1.25,
-          ),
-        ),
+        Text('A few more details', style: MataText.display(fontSize: 26)),
         const SizedBox(height: 6),
         Text(
           'Help us understand your symptoms better.',
-          style: GoogleFonts.reemKufi(
-            color: brown,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+          style: MataText.body(
+            color: MataColors.muted,
+            fontSize: 13.5,
+            height: 1.55,
           ),
         ),
       ],
@@ -221,25 +193,33 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
   }
 
   Widget _buildProgressIndicator() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _progressLine(color: brown)),
-            const SizedBox(width: 7),
-            Expanded(child: _progressLine(color: const Color(0xFFE7E1DA))),
-            const SizedBox(width: 7),
-            Expanded(child: _progressLine(color: const Color(0xFFE7E1DA))),
-          ],
+    final segments = <Widget>[];
+
+    for (var step = 1; step <= 3; step++) {
+      if (segments.isNotEmpty) {
+        segments.add(const SizedBox(width: 4));
+      }
+
+      segments.add(
+        _progressLine(
+          color: step <= 1
+              ? MataColors.brown
+              : MataColors.brown.withValues(alpha: 0.22),
         ),
-        const SizedBox(height: 7),
+      );
+    }
+
+    return Row(
+      children: [
+        ...segments,
+        const SizedBox(width: 10),
         Text(
-          'Step 1 of 3',
-          style: GoogleFonts.reemKufi(
-            color: brown,
-            fontSize: 12,
+          'STEP 1 OF 3',
+          style: MataText.body(
+            color: MataColors.faint,
+            fontSize: 11.5,
             fontWeight: FontWeight.w500,
+            letterSpacing: 1,
           ),
         ),
       ],
@@ -248,10 +228,11 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
 
   Widget _progressLine({required Color color}) {
     return Container(
-      height: 9,
+      width: 22,
+      height: 4,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(2),
       ),
     );
   }
@@ -262,9 +243,9 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
         child: Text(
           'No additional details are needed.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.reemKufi(
-            color: brown,
-            fontSize: 16,
+          style: MataText.body(
+            color: MataColors.muted,
+            fontSize: 15,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -272,10 +253,10 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
+      padding: const EdgeInsets.only(top: 4, bottom: 10),
       itemCount: _questions.length,
       separatorBuilder: (_, _) {
-        return const SizedBox(height: 22);
+        return const SizedBox(height: 14);
       },
       itemBuilder: (context, index) {
         return _buildQuestionCard(_questions[index]);
@@ -292,60 +273,45 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
     final showAgeField =
         question.type == _QuestionType.confirmSubject && _isForOtherPerson;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 22, 14, 22),
-      decoration: BoxDecoration(
-        color: softBeige,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 14,
-            offset: const Offset(0, 7),
-          ),
-        ],
-      ),
+    return MataGlass(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              question.question,
-              style: GoogleFonts.reemKufi(
-                color: const Color(0xFF6A211A),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                height: 1.6,
-              ),
+          Text(
+            question.question,
+            style: MataText.body(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+              height: 1.5,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (isYesNoQuestion)
             Row(
-              children: question.options.map((option) {
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+              children: [
+                for (var i = 0; i < question.options.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 10),
+                  Expanded(
                     child: _buildOptionButton(
                       question: question,
-                      option: option,
+                      option: question.options[i],
                     ),
                   ),
-                );
-              }).toList(),
+                ],
+              ],
             )
           else
             Column(
               children: question.options.map((option) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: _buildOptionButton(question: question, option: option),
                 );
               }).toList(),
             ),
           if (showAgeField) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _buildOtherPersonAgeField(),
           ],
         ],
@@ -359,36 +325,36 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
   }) {
     final isSelected = _selectedAnswers[question.id] == option.value;
 
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton(
-        onPressed: () {
-          setState(() {
-            _selectedAnswers[question.id] = option.value;
-          });
-        },
-        style: ElevatedButton.styleFrom(
-          elevation: isSelected ? 1 : 3,
-          backgroundColor: isSelected
-              ? darkBrown.withValues(alpha: 0.10)
-              : Colors.white,
-          foregroundColor: darkBrown,
-          shadowColor: Colors.black.withValues(alpha: 0.18),
-          side: BorderSide(
-            color: isSelected ? darkBrown : borderColor,
-            width: isSelected ? 2 : 1,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedAnswers[question.id] = option.value;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: double.infinity,
+        height: 46,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? brown.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? brown : brown.withValues(alpha: 0.18),
+            width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Text(
           option.label,
           textAlign: TextAlign.center,
-          style: GoogleFonts.reemKufi(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+          style: MataText.body(
+            color: isSelected ? brown : MataColors.ink,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            height: 1.2,
           ),
         ),
       ),
@@ -396,58 +362,31 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
   }
 
   Widget _buildOtherPersonAgeField() {
-    return TextField(
-      controller: _otherPersonAgeController,
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(3),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const MataLabel('Their age'),
+        TextField(
+          controller: _otherPersonAgeController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(3),
+          ],
+          onChanged: (_) {
+            setState(() {});
+          },
+          style: MataText.body(fontSize: 15),
+          decoration: MataFields.light(hintText: 'Enter age'),
+        ),
       ],
-      onChanged: (_) {
-        setState(() {});
-      },
-      style: GoogleFonts.reemKufi(color: darkBrown, fontSize: 15),
-      decoration: InputDecoration(
-        labelText: 'Their age',
-        hintText: 'Enter age',
-        filled: true,
-        fillColor: Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: borderColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: darkBrown, width: 2),
-        ),
-      ),
     );
   }
 
   Widget _buildContinueButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _allQuestionsAnswered ? _continue : null,
-        style: ElevatedButton.styleFrom(
-          elevation: 5,
-          backgroundColor: darkBrown,
-          disabledBackgroundColor: darkBrown.withValues(alpha: 0.45),
-          foregroundColor: softBeige,
-          disabledForegroundColor: softBeige.withValues(alpha: 0.75),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Text(
-          'Continue',
-          style: GoogleFonts.reemKufi(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+    return MataButton(
+      label: 'Continue',
+      onPressed: _allQuestionsAnswered ? _continue : null,
     );
   }
 
