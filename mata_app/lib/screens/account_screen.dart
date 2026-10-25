@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'change_password_screen.dart';
 import 'edit_personal_information_screen.dart';
+import '../theme/mata_theme.dart';
 import '../widgets/delete_account_dialog.dart';
 import '../widgets/sos_button.dart';
+import '../widgets/stroke_background.dart';
 
 import '../widgets/mata_bottom_navigation_bar.dart';
 
@@ -17,7 +18,7 @@ class AccountScreen extends StatelessWidget {
   static const Color darkBrown = Color(0xFF5C3F38);
   static const Color softBeige = Color(0xFFF7F3EB);
   static const Color red = Color(0xFFB71616);
-  static const Color borderColor = Color(0xFFDCCDB5);
+  static const Color borderColor = Color(0x1F79543B);
 
   String _formatDate(Object? value) {
     if (value is! Timestamp) {
@@ -36,27 +37,24 @@ class AccountScreen extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: softBeige,
+          backgroundColor: MataColors.softWhite,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
           ),
           title: Text(
             'Sign Out',
-            style: GoogleFonts.reemKufi(
-              color: darkBrown,
-              fontWeight: FontWeight.w600,
-            ),
+            style: MataText.display(fontSize: 22, color: darkBrown),
           ),
           content: Text(
             'Are you sure you want to sign out?',
-            style: GoogleFonts.reemKufi(color: brown),
+            style: MataText.body(color: brown),
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: Text('Cancel', style: GoogleFonts.reemKufi(color: brown)),
+              child: Text('Cancel', style: MataText.body(color: brown)),
             ),
             TextButton(
               onPressed: () {
@@ -64,7 +62,7 @@ class AccountScreen extends StatelessWidget {
               },
               child: Text(
                 'Sign Out',
-                style: GoogleFonts.reemKufi(
+                style: MataText.body(
                   color: red,
                   fontWeight: FontWeight.w600,
                 ),
@@ -101,34 +99,22 @@ class AccountScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/background.png', fit: BoxFit.cover),
+          const StrokeBackground(),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 10, 28, 12),
               child: Column(
                 children: [
-                  Align(
+                  const Align(
                     alignment: Alignment.centerLeft,
-                    child: Transform.translate(
-                      offset: const Offset(-28, -17),
-                      child: Image.asset(
-                        'assets/images/mata_logo.png',
-                        width: 90,
-                        height: 55,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+                    child: MataCornerLogo(),
                   ),
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'My Account',
-                      style: GoogleFonts.reemKufi(
-                        color: darkBrown,
-                        fontSize: 34,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: MataText.display(fontSize: 30),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -163,16 +149,9 @@ class AccountScreen extends StatelessWidget {
                             children: [
                               const _SectionTitle(text: 'ACCOUNT INFORMATION'),
                               const SizedBox(height: 10),
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: softBeige,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                    color: borderColor,
-                                    width: 1.3,
-                                  ),
-                                ),
+                              MataGlass(
+                                padding: EdgeInsets.zero,
+                                radius: 18,
                                 child: Column(
                                   children: [
                                     _InformationRow(label: 'Name', value: name),
@@ -198,16 +177,9 @@ class AccountScreen extends StatelessWidget {
                               const SizedBox(height: 26),
                               const _SectionTitle(text: 'ACCOUNT ACTIONS'),
                               const SizedBox(height: 10),
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: softBeige,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                    color: borderColor,
-                                    width: 1.3,
-                                  ),
-                                ),
+                              MataGlass(
+                                padding: EdgeInsets.zero,
+                                radius: 18,
                                 child: Column(
                                   children: [
                                     _ActionRow(
@@ -231,7 +203,7 @@ class AccountScreen extends StatelessWidget {
                                             SnackBar(
                                               content: Text(
                                                 'Your information has been updated.',
-                                                style: GoogleFonts.reemKufi(),
+                                                style: MataText.body(color: MataColors.softWhite),
                                               ),
                                               backgroundColor: darkBrown,
                                             ),
@@ -264,7 +236,7 @@ class AccountScreen extends StatelessWidget {
                                             SnackBar(
                                               content: Text(
                                                 'Your password has been changed.',
-                                                style: GoogleFonts.reemKufi(),
+                                                style: MataText.body(color: MataColors.softWhite),
                                               ),
                                               backgroundColor: darkBrown,
                                             ),
@@ -294,16 +266,9 @@ class AccountScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: softBeige,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                    color: borderColor,
-                                    width: 1.3,
-                                  ),
-                                ),
+                              MataGlass(
+                                padding: EdgeInsets.zero,
+                                radius: 18,
                                 child: _ActionRow(
                                   label: 'Delete Account',
                                   labelColor: red,
@@ -322,7 +287,7 @@ class AccountScreen extends StatelessWidget {
                                           SnackBar(
                                             content: Text(
                                               'Your account has been permanently deleted.',
-                                              style: GoogleFonts.reemKufi(),
+                                              style: MataText.body(color: MataColors.softWhite),
                                             ),
                                             backgroundColor: darkBrown,
                                             duration: const Duration(
@@ -344,8 +309,8 @@ class AccountScreen extends StatelessWidget {
                                 ),
                                 child: Text(
                                   'This action is permanent and cannot be undone.',
-                                  style: GoogleFonts.reemKufi(
-                                    color: brown,
+                                  style: MataText.body(
+                                    color: MataColors.faint,
                                     fontSize: 12,
                                     height: 1.4,
                                   ),
@@ -372,7 +337,15 @@ class AccountScreen extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(right: 28, bottom: 105, child: SosButton(onTap: () {})),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, right: 22),
+                child: SosButton(onTap: () {}),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -386,12 +359,16 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: GoogleFonts.reemKufi(
-        color: AccountScreen.brown,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        text,
+        style: MataText.body(
+          color: MataColors.faint,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1,
+        ),
       ),
     );
   }
@@ -413,7 +390,7 @@ class _InformationRow extends StatelessWidget {
             width: 92,
             child: Text(
               label,
-              style: GoogleFonts.reemKufi(
+              style: MataText.body(
                 color: AccountScreen.brown,
                 fontSize: 14,
               ),
@@ -425,7 +402,7 @@ class _InformationRow extends StatelessWidget {
               value,
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.reemKufi(
+              style: MataText.body(
                 color: AccountScreen.darkBrown,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -461,7 +438,7 @@ class _ActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.reemKufi(
+                style: MataText.body(
                   color: labelColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
@@ -470,7 +447,7 @@ class _ActionRow extends StatelessWidget {
             ),
             const Icon(
               Icons.chevron_right_rounded,
-              color: AccountScreen.brown,
+              color: MataColors.faint,
               size: 25,
             ),
           ],

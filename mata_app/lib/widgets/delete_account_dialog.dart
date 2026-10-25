@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
+import '../theme/mata_theme.dart';
 
 class DeleteAccountDialog extends StatefulWidget {
   const DeleteAccountDialog({super.key});
@@ -16,9 +16,6 @@ class _DeleteAccountDialogState
     extends State<DeleteAccountDialog> {
   static const Color brown = Color(0xFF79543B);
   static const Color darkBrown = Color(0xFF5C3F38);
-  static const Color softBeige = Color(0xFFF7F3EB);
-  static const Color borderColor = Color(0xFFDCCDB5);
-  static const Color hintGray = Color(0xFF929292);
   static const Color red = Color(0xFFB71616);
 
   final AuthService _authService = AuthService();
@@ -102,17 +99,14 @@ class _DeleteAccountDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: softBeige,
+      backgroundColor: MataColors.softWhite,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
       ),
       title: Text(
         'Delete Account',
-        style: GoogleFonts.reemKufi(
-          color: red,
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-        ),
+        style: MataText.display(color: red, fontSize: 22),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -127,7 +121,7 @@ class _DeleteAccountDialogState
 '• Your generated reports\n'
 '• Your emergency contacts and default SOS contact\n\n'
 'This action cannot be undone.',
-              style: GoogleFonts.reemKufi(
+              style: MataText.body(
                 color: darkBrown,
                 fontSize: 14,
                 height: 1.5,
@@ -136,7 +130,7 @@ class _DeleteAccountDialogState
             const SizedBox(height: 20),
             Text(
               'Enter your password to confirm',
-              style: GoogleFonts.reemKufi(
+              style: MataText.body(
                 color: darkBrown,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -154,18 +148,12 @@ class _DeleteAccountDialogState
                   });
                 }
               },
-              style: GoogleFonts.reemKufi(
+              style: MataText.body(
                 color: darkBrown,
                 fontSize: 14,
               ),
-              decoration: InputDecoration(
+              decoration: MataFields.light(
                 hintText: 'Password',
-                hintStyle: GoogleFonts.reemKufi(
-                  color: hintGray,
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: softBeige,
                 suffixIcon: IconButton(
                   onPressed: _isDeleting
                       ? null
@@ -179,23 +167,8 @@ class _DeleteAccountDialogState
                     _showPassword
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined,
-                    color: brown,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: borderColor,
-                    width: 1.3,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: brown,
-                    width: 1.8,
+                    color: MataColors.faint,
+                    size: 20,
                   ),
                 ),
               ),
@@ -204,7 +177,7 @@ class _DeleteAccountDialogState
               const SizedBox(height: 10),
               Text(
                 _errorMessage!,
-                style: GoogleFonts.reemKufi(
+                style: MataText.body(
                   color: red,
                   fontSize: 12,
                 ),
@@ -222,7 +195,7 @@ class _DeleteAccountDialogState
                 },
           child: Text(
             'Cancel',
-            style: GoogleFonts.reemKufi(
+            style: MataText.body(
               color: brown,
             ),
           ),
@@ -241,7 +214,7 @@ class _DeleteAccountDialogState
                 )
               : Text(
                   'Delete Permanently',
-                  style: GoogleFonts.reemKufi(
+                  style: MataText.body(
                     color: red,
                     fontWeight: FontWeight.w600,
                   ),

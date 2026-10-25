@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../theme/mata_theme.dart';
 import '../widgets/sos_button.dart';
+import '../widgets/stroke_background.dart';
 
 class SymptomReviewScreen extends StatefulWidget {
   const SymptomReviewScreen({
@@ -31,7 +32,6 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
   static const Color brown = Color(0xFF79543B);
   static const Color darkBrown = Color(0xFF5C3F38);
   static const Color softBeige = Color(0xFFF7F3EB);
-  static const Color borderColor = Color(0xFFDCCDB5);
 
   late final List<_ReviewedSymptom> _symptoms;
   late final List<_ReviewedSymptom> _deniedSymptoms;
@@ -335,34 +335,24 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/background.png', fit: BoxFit.cover),
+          const StrokeBackground(),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 14, 28, 24),
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context),
-                  const SizedBox(height: 4),
-                  _buildTitle(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildProgressIndicator(),
-                  const SizedBox(height: 18),
-                  Expanded(
-                    child: Scrollbar(
-                      thumbVisibility: true,
-                      child: _buildSymptomList(),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
+                  _buildTitle(),
+                  const SizedBox(height: 14),
+                  Expanded(child: _buildSymptomList()),
+                  const SizedBox(height: 12),
                   _buildContinueButton(),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 10),
                   _buildEditButton(),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SosButton(onTap: () {}),
-                  ),
                 ],
               ),
             ),
@@ -374,37 +364,23 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return SizedBox(
-      height: 65,
+      width: double.infinity,
+      height: 92,
       child: Stack(
         children: [
-          Transform.translate(
-            offset: const Offset(-28, -17),
-            child: Image.asset(
-              'assets/images/mata_logo.png',
-              width: 90,
-              height: 55,
-              fit: BoxFit.contain,
-            ),
+          const MataCornerLogo(),
+          Positioned(
+            right: 0,
+            top: -2,
+            child: SosButton(onTap: () {}),
           ),
           Positioned(
             left: 0,
-            bottom: 0,
-            child: TextButton.icon(
-              onPressed: () {
+            bottom: 4,
+            child: MataBackButton(
+              onTap: () {
                 Navigator.of(context).pop();
               },
-              style: TextButton.styleFrom(
-                foregroundColor: brown,
-                padding: EdgeInsets.zero,
-              ),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-              label: Text(
-                'Back',
-                style: GoogleFonts.reemKufi(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
         ],
@@ -412,66 +388,57 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     );
   }
 
-
   Widget _buildTitle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Let’s confirm your\nsymptoms',
-          style: GoogleFonts.reemKufi(
-            color: Colors.black,
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-            height: 1.3,
-          ),
+          'Let’s confirm your symptoms',
+          style: MataText.display(fontSize: 26),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           'Please review both the symptoms we detected '
-              'and those we understood as denied. '
-              'Correct anything that is not accurate.',
-          style: GoogleFonts.reemKufi(
-            color: brown,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            height: 1.7,
+          'and those we understood as denied. '
+          'Correct anything that is not accurate.',
+          style: MataText.body(
+            color: MataColors.muted,
+            fontSize: 13.5,
+            height: 1.55,
           ),
         ),
       ],
     );
   }
 
-
   Widget _buildProgressIndicator() {
-    final progressSegments = <Widget>[];
+    final segments = <Widget>[];
 
     for (var step = 1; step <= widget.totalSteps; step++) {
-      if (progressSegments.isNotEmpty) {
-        progressSegments.add(const SizedBox(width: 7));
+      if (segments.isNotEmpty) {
+        segments.add(const SizedBox(width: 4));
       }
 
-      progressSegments.add(
-        Expanded(
-          child: _progressLine(
-            color: step <= widget.currentStep ? brown : const Color(0xFFE7E1DA),
-          ),
+      segments.add(
+        _progressLine(
+          color: step <= widget.currentStep
+              ? MataColors.brown
+              : MataColors.brown.withValues(alpha: 0.22),
         ),
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(children: progressSegments),
-        const SizedBox(height: 7),
+        ...segments,
+        const SizedBox(width: 10),
         Text(
-          'Step ${widget.currentStep} '
-          'of ${widget.totalSteps}',
-          style: GoogleFonts.reemKufi(
-            color: brown,
-            fontSize: 12,
+          'STEP ${widget.currentStep} OF ${widget.totalSteps}',
+          style: MataText.body(
+            color: MataColors.faint,
+            fontSize: 11.5,
             fontWeight: FontWeight.w500,
+            letterSpacing: 1,
           ),
         ),
       ],
@@ -480,26 +447,27 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
 
   Widget _progressLine({required Color color}) {
     return Container(
-      height: 9,
+      width: 22,
+      height: 4,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(2),
       ),
     );
   }
 
-
   Widget _buildSymptomList() {
     if (_symptoms.isEmpty &&
         _deniedSymptoms.isEmpty &&
-        _conflictingSymptoms.isEmpty) {      return Center(
+        _conflictingSymptoms.isEmpty) {
+      return Center(
         child: Text(
           'No symptoms were identified.\n'
-              'Edit your description and try again.',
+          'Edit your description and try again.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.reemKufi(
-            color: brown,
-            fontSize: 16,
+          style: MataText.body(
+            color: MataColors.muted,
+            fontSize: 15,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -509,149 +477,157 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       primary: true,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 2,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
       children: [
-        if (_symptoms.isNotEmpty) ...[
-          Text(
-            'Detected Symptoms',
-            style: GoogleFonts.reemKufi(
-              color: darkBrown,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
+        if (_symptoms.isNotEmpty)
+          _buildSection(
+            dot: brown,
+            title: 'Detected Symptoms',
+            description: 'Are you currently experiencing these symptoms?',
+            symptoms: _symptoms,
+            isOriginallyDenied: false,
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Are you currently experiencing these symptoms?',
-            style: GoogleFonts.reemKufi(
-              color: brown,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 14),
 
-          ..._symptoms.map(
-                (symptom) => _buildReviewCard(
-              symptom: symptom,
-              isOriginallyDenied: false,
-            ),
-          ),
-        ],
-
-        if (_deniedSymptoms.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Text(
-            'Symptoms Understood as Denied',
-            style: GoogleFonts.reemKufi(
-              color: darkBrown,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'We understood that you do not have these '
+        if (_deniedSymptoms.isNotEmpty)
+          _buildSection(
+            dot: const Color(0xFF9C8B80),
+            title: 'Symptoms Understood as Denied',
+            description:
+                'We understood that you do not have these '
                 'symptoms. Please correct us if this is wrong.',
-            style: GoogleFonts.reemKufi(
-              color: brown,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          ..._deniedSymptoms.map(
-                (symptom) => _buildReviewCard(
-              symptom: symptom,
-              isOriginallyDenied: true,
-            ),
-          ),
-        ],
-
-        if (_conflictingSymptoms.isNotEmpty) ...[
-          const SizedBox(height: 24),
-
-          Text(
-            'Symptoms Needing Clarification',
-            style: GoogleFonts.reemKufi(
-              color: darkBrown,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
+            symptoms: _deniedSymptoms,
+            isOriginallyDenied: true,
           ),
 
-          const SizedBox(height: 6),
-
-          Text(
-            'We found conflicting information about these '
+        if (_conflictingSymptoms.isNotEmpty)
+          _buildSection(
+            dot: MataColors.amber,
+            title: 'Symptoms Needing Clarification',
+            description:
+                'We found conflicting information about these '
                 'symptoms. Please tell us whether you currently '
                 'have them.',
-            style: GoogleFonts.reemKufi(
-              color: brown,
-              fontSize: 13,
-            ),
+            symptoms: _conflictingSymptoms,
+            isOriginallyDenied: false,
           ),
-
-          const SizedBox(height: 14),
-
-          ..._conflictingSymptoms.map(
-                (symptom) => _buildReviewCard(
-              symptom: symptom,
-              isOriginallyDenied: false,
-            ),
-          ),
-        ],
-
       ],
+    );
+  }
+
+  Widget _buildSection({
+    required Color dot,
+    required String title,
+    required String description,
+    required List<_ReviewedSymptom> symptoms,
+    required bool isOriginallyDenied,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: MataGlass(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: dot,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: MataText.body(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: MataText.body(
+                color: const Color(0xFF7A6458),
+                fontSize: 12.5,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 6),
+            for (var i = 0; i < symptoms.length; i++)
+              _buildReviewCard(
+                symptom: symptoms[i],
+                isOriginallyDenied: isOriginallyDenied,
+                showDivider: i > 0,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildReviewCard({
     required _ReviewedSymptom symptom,
     required bool isOriginallyDenied,
+    bool showDivider = false,
   }) {
     final selected = _decisions[symptom.column];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 7,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: showDivider
+            ? Border(
+                top: BorderSide(color: brown.withValues(alpha: 0.12)),
+              )
+            : null,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            symptom.displayName,
-            style: GoogleFonts.reemKufi(
-              color: brown,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  symptom.displayName,
+                  style: MataText.body(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                  ),
+                ),
+                if (symptom.matchedText != null)
+                  Text(
+                    '“${symptom.matchedText}”',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MataText.body(
+                      color: MataColors.faint,
+                      fontSize: 11.5,
+                      height: 1.4,
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-
-          Row(
-            children: [
-              Expanded(
-                child: _buildChoiceButton(
-                  label: isOriginallyDenied
-                      ? 'I have it'
-                      : 'Yes',
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: brown.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildChoiceButton(
+                  label: isOriginallyDenied ? 'I have it' : 'Yes',
                   isSelected: selected == true,
                   onPressed: () {
                     setState(() {
@@ -659,13 +635,8 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
                     });
                   },
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildChoiceButton(
-                  label: isOriginallyDenied
-                      ? "I don't have it"
-                      : 'No',
+                _buildChoiceButton(
+                  label: isOriginallyDenied ? "I don't have it" : 'No',
                   isSelected: selected == false,
                   onPressed: () {
                     setState(() {
@@ -673,8 +644,8 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
                     });
                   },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -686,85 +657,51 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     required bool isSelected,
     required VoidCallback onPressed,
   }) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        backgroundColor:
-        isSelected ? const Color(0xFFF0EBE6) : Colors.white,
-        foregroundColor: darkBrown,
-        side: BorderSide(
-          color: isSelected ? darkBrown : borderColor,
-          width: isSelected ? 2 : 1,
+    return GestureDetector(
+      onTap: onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        constraints: const BoxConstraints(minWidth: 46),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? MataColors.softWhite : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: darkBrown.withValues(alpha: 0.18),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 12,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.reemKufi(
-          fontSize: 12,
-          fontWeight:
-          isSelected ? FontWeight.w700 : FontWeight.w500,
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: MataText.body(
+            color: isSelected ? brown : const Color(0xFF7A6458),
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            height: 1.2,
+          ),
         ),
       ),
     );
   }
 
-
   Widget _buildContinueButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _allReviewed ? _continue : null,
-        style: ElevatedButton.styleFrom(
-          elevation: 5,
-          backgroundColor: darkBrown,
-          disabledBackgroundColor: darkBrown.withValues(alpha: 0.45),
-          foregroundColor: softBeige,
-          disabledForegroundColor: softBeige.withValues(alpha: 0.75),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Text(
-          'Continue',
-          style: GoogleFonts.reemKufi(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+    return MataButton(
+      label: 'Continue',
+      onPressed: _allReviewed ? _continue : null,
     );
   }
 
   Widget _buildEditButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton(
-        onPressed: widget.onEditDescription,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: brown,
-          side: const BorderSide(color: brown, width: 1.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Text(
-          'Edit my Description',
-          style: GoogleFonts.reemKufi(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+    return MataButton(
+      label: 'Edit my Description',
+      style: MataButtonStyle.line,
+      onPressed: widget.onEditDescription,
     );
   }
 }
