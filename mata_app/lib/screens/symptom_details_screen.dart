@@ -399,7 +399,7 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
                                         onTap: () => setState(() => _severity = option.$2),
                                       ),
                                     _choice(
-                                      label: 'Skip',
+                                      label: "I'm not sure",
                                       selected: _severity == null,
                                       onTap: () => setState(() => _severity = null),
                                     ),
@@ -491,7 +491,7 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
                                         onTap: () => setState(() => _onset = option.$2),
                                       ),
                                     _choice(
-                                      label: 'Skip',
+                                      label: "I'm not sure",
                                       selected: _onset == null,
                                       onTap: () => setState(() => _onset = null),
                                     ),
@@ -516,7 +516,7 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
                                             setState(() => _progression = option.$2),
                                       ),
                                     _choice(
-                                      label: 'Skip',
+                                      label: "I'm not sure",
                                       selected: _progression == null,
                                       onTap: () => setState(() => _progression = null),
                                     ),
