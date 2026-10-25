@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../theme/mata_theme.dart';
 
 class SosButton extends StatelessWidget {
   const SosButton({
@@ -13,35 +14,50 @@ class SosButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: red,
-      shape: const CircleBorder(),
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.35),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 66,
-          height: 66,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.phone_in_talk_outlined,
-                color: Colors.white,
-                size: 25,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: red.withValues(alpha: 0.7),
+            blurRadius: 18,
+            spreadRadius: -8,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: red,
+        shape: const StadiumBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const StadiumBorder(),
+          child: SizedBox(
+            height: 36,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.phone_in_talk_outlined,
+                    color: Colors.white,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'SOS',
+                    style: MataText.body(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'SOS',
-                style: GoogleFonts.reemKufi(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  height: 1,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

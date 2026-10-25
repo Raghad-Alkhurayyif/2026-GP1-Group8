@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
+import '../theme/mata_theme.dart';
+import '../widgets/road_scene.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -12,10 +13,8 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  static const Color brown = Color(0xFF79543B);
-  static const Color fieldLine = Color(0xFFB99A7B);
-  static const Color hintColor = Color(0xFF929292);
-  static const Color backgroundColor = Color(0xFFF8F5EF);
+  static const Color softWhite = MataColors.softWhite;
+  static const Color backgroundColor = Color(0xFF1E1517);
 
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -95,187 +94,140 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.sizeOf(context);
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/welcome_background.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned(
-            top: screenSize.height * 0.06,
-            //right: 0,
-            right: 40,
-            child: SizedBox(
-              // width: screenSize.width,
-              width: 370, 
-              child: Image.asset(
-                'assets/images/mata_logo.png',
-                fit: BoxFit.fitWidth,
+          // the same twilight as the welcome screen, the horizon drawn higher
+          const Positioned.fill(child: RoadScene(mood: RoadMood.signIn)),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+              child: MataBackButton(
+                night: true,
+                onTap: () => Navigator.of(context).maybePop(),
               ),
             ),
           ),
-          Positioned.fill(
-            top: screenSize.height * 0.27,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: backgroundColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(38)),
-              ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.bottomCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(32, 34, 32, 32),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'FORGOT PASSWORD',
-                          style: GoogleFonts.reemKufi(
-                            color: brown,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w600,
-                            shadows: const [
-                              Shadow(
-                                color: Color(0x40000000),
-                                offset: Offset(0, 3),
-                                blurRadius: 4,
-                              ),
-                            ],
+                padding: const EdgeInsets.fromLTRB(10, 64, 10, 10),
+                child: MataNightSheet(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Forgot password',
+                          style: MataText.display(
+                            color: softWhite,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w500,
+                            height: 1.15,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 34),
-                      _buildLabel('Email Address'),
-                      TextFormField(
-                        controller: _emailController,
-                        onChanged: (_) {
-                          if (_errorMessage != null ||
-                              _successMessage != null) {
-                            setState(() {
-                              _errorMessage = null;
-                              _successMessage = null;
-                            });
-                          }
-                        },
-                        keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        style: GoogleFonts.reemKufi(color: brown, fontSize: 16),
-                        textAlignVertical: TextAlignVertical.bottom,
-                        decoration: _fieldDecoration(
-                          hintText: 'user123@gmail.com',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Email is required.';
-                          }
-
-                          final emailPattern = RegExp(
-                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                          );
-
-                          if (!emailPattern.hasMatch(value.trim())) {
-                            return 'Enter a valid email address.';
-                          }
-
-                          return null;
-                        },
-                      ),
-                      if (_errorMessage != null) ...[
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 4),
                         Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.reemKufi(
-                            color: Colors.red.shade700,
+                          "Enter your email and we'll send you a link "
+                          'to reset your password.',
+                          style: MataText.body(
+                            color: softWhite.withValues(alpha: 0.7),
                             fontSize: 13,
                           ),
                         ),
-                      ],
-                      if (_successMessage != null) ...[
-                        const SizedBox(height: 14),
-                        Text(
-                          _successMessage!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.reemKufi(
-                            color: brown,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 32),
-                      GestureDetector(
-                        onTap: _isLoading ? null : _sendResetLink,
-                        child: Opacity(
-                          opacity: _isLoading ? 0.6 : 1,
-                          child: Container(
-                            height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(30),
-                              image: const DecorationImage(
-                                image: AssetImage(
-                                  'assets/images/'
-                                  'sign_in_button_background.png',
-                                ),
-                                fit: BoxFit.fill,
-                              ),
-                              border: Border.all(
-                                color: backgroundColor,
-                                width: 2,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 23,
-                                    height: 23,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : Transform.translate(
-                                    offset: const Offset(0, -3),
-                                    child: Text(
-                                      'Send Reset Link',
-                                      style: GoogleFonts.reemKufi(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pop(context);
+                        const SizedBox(height: 18),
+                        _buildLabel('Email Address'),
+                        TextFormField(
+                          controller: _emailController,
+                          onChanged: (_) {
+                            if (_errorMessage != null ||
+                                _successMessage != null) {
+                              setState(() {
+                                _errorMessage = null;
+                                _successMessage = null;
+                              });
+                            }
                           },
-                          child: Text(
-                            'Back to Sign In',
-                            style: GoogleFonts.reemKufi(
-                              color: brown,
-                              fontSize: 15,
-                              decoration: TextDecoration.underline,
-                              decorationColor: brown,
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          style: MataText.body(
+                            color: softWhite,
+                            fontSize: 15,
+                            height: 1.3,
+                          ),
+                          cursorColor: softWhite,
+                          decoration: _fieldDecoration(
+                            hintText: 'user123@gmail.com',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Email is required.';
+                            }
+
+                            final emailPattern = RegExp(
+                              r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                            );
+
+                            if (!emailPattern.hasMatch(value.trim())) {
+                              return 'Enter a valid email address.';
+                            }
+
+                            return null;
+                          },
+                        ),
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: MataText.body(
+                              color: const Color(0xFFFF9C8C),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                        if (_successMessage != null) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            _successMessage!,
+                            textAlign: TextAlign.center,
+                            style: MataText.body(
+                              color: const Color(0xFFF3D9B6),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        MataButton(
+                          label: 'Send Reset Link',
+                          style: MataButtonStyle.cream,
+                          loading: _isLoading,
+                          onPressed: _isLoading ? null : _sendResetLink,
+                        ),
+                        const SizedBox(height: 14),
+                        Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              'Back to Sign In',
+                              style: MataText.body(
+                                color: softWhite.withValues(alpha: 0.9),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -286,35 +238,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.reemKufi(
-        color: brown,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
+  Widget _buildLabel(String text) => MataLabel(text, night: true);
 
   InputDecoration _fieldDecoration({required String hintText}) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: GoogleFonts.reemKufi(color: hintColor, fontSize: 16),
-      isDense: true,
-      contentPadding: const EdgeInsets.only(top: 22, bottom: 1),
-      enabledBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: fieldLine, width: 1.5),
-      ),
-      focusedBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: brown, width: 2),
-      ),
-      errorBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: const UnderlineInputBorder(
-        borderSide: BorderSide(color: Colors.red, width: 2),
-      ),
-    );
+    return MataFields.night(hintText: hintText);
   }
 }
