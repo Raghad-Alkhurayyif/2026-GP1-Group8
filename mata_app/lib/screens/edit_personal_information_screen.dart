@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
+import '../theme/mata_theme.dart';
 import '../widgets/sos_button.dart';
+import '../widgets/stroke_background.dart';
 
 class EditPersonalInformationScreen extends StatefulWidget {
   const EditPersonalInformationScreen({super.key});
@@ -19,7 +20,6 @@ class _EditPersonalInformationScreenState
   static const Color brown = Color(0xFF79543B);
   static const Color darkBrown = Color(0xFF5C3F38);
   static const Color softBeige = Color(0xFFF7F3EB);
-  static const Color borderColor = Color(0xFFDCCDB5);
   static const Color hintGray = Color(0xFF929292);
 
   final AuthService _authService = AuthService();
@@ -207,49 +207,24 @@ class _EditPersonalInformationScreenState
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/background.png', fit: BoxFit.cover),
+          const StrokeBackground(),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 10, 28, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Transform.translate(
-                    offset: const Offset(-28, -17),
-                    child: Image.asset(
-                      'assets/images/mata_logo.png',
-                      width: 90,
-                      height: 55,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                  const MataCornerLogo(),
                   const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: darkBrown,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          'Edit Personal Information',
-                          style: GoogleFonts.reemKufi(
-                            color: darkBrown,
-                            fontSize: 25,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+                  MataBackButton(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Edit Personal Information',
+                    style: MataText.display(fontSize: 26),
                   ),
                   const SizedBox(height: 28),
                   Expanded(
@@ -258,15 +233,21 @@ class _EditPersonalInformationScreenState
                             child: CircularProgressIndicator(color: darkBrown),
                           )
                         : SingleChildScrollView(
-                            child: Column(
+                            child: MataGlass(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                18,
+                                16,
+                                18,
+                              ),
+                              child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _FieldLabel(text: 'Name'),
-                                const SizedBox(height: 8),
-                                TextField(
+                                                                TextField(
                                   controller: _nameController,
                                   textCapitalization: TextCapitalization.words,
-                                  style: GoogleFonts.reemKufi(
+                                  style: MataText.body(
                                     color: darkBrown,
                                     fontSize: 15,
                                   ),
@@ -281,13 +262,12 @@ class _EditPersonalInformationScreenState
                                     }
                                   },
                                 ),
-                                const SizedBox(height: 22),
+                                const SizedBox(height: 14),
                                 _FieldLabel(text: 'Email'),
-                                const SizedBox(height: 8),
-                                TextField(
+                                                                TextField(
                                   controller: _emailController,
                                   readOnly: true,
-                                  style: GoogleFonts.reemKufi(
+                                  style: MataText.body(
                                     color: hintGray,
                                     fontSize: 15,
                                   ),
@@ -300,24 +280,24 @@ class _EditPersonalInformationScreenState
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 22),
+                                const SizedBox(height: 14),
                                 _FieldLabel(text: 'Date of Birth'),
-                                const SizedBox(height: 8),
-                                InkWell(
+                                                                InkWell(
                                   onTap: _selectDateOfBirth,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
                                     width: double.infinity,
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 17,
+                                      horizontal: 14,
+                                      vertical: 13,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: softBeige,
-                                      borderRadius: BorderRadius.circular(16),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: borderColor,
-                                        width: 1.3,
+                                        color: brown.withValues(alpha: 0.18),
                                       ),
                                     ),
                                     child: Row(
@@ -327,7 +307,7 @@ class _EditPersonalInformationScreenState
                                             _dateOfBirth == null
                                                 ? 'Select your date of birth'
                                                 : _formatDate(_dateOfBirth!),
-                                            style: GoogleFonts.reemKufi(
+                                            style: MataText.body(
                                               color: _dateOfBirth == null
                                                   ? hintGray
                                                   : darkBrown,
@@ -348,49 +328,20 @@ class _EditPersonalInformationScreenState
                                   const SizedBox(height: 16),
                                   Text(
                                     _errorMessage!,
-                                    style: GoogleFonts.reemKufi(
+                                    style: MataText.body(
                                       color: const Color(0xFFB71616),
                                       fontSize: 13,
                                     ),
                                   ),
                                 ],
-                                const SizedBox(height: 32),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 58,
-                                  child: ElevatedButton(
-                                    onPressed: _isSaving ? null : _saveChanges,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: darkBrown,
-                                      foregroundColor: softBeige,
-                                      disabledBackgroundColor: brown,
-                                      elevation: 5,
-                                      shadowColor: Colors.black.withValues(
-                                        alpha: 0.25,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(29),
-                                      ),
-                                    ),
-                                    child: _isSaving
-                                        ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              color: softBeige,
-                                              strokeWidth: 2.5,
-                                            ),
-                                          )
-                                        : Text(
-                                            'SAVE CHANGES',
-                                            style: GoogleFonts.reemKufi(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                  ),
+                                const SizedBox(height: 22),
+                                MataButton(
+                                  label: 'Save Changes',
+                                  loading: _isSaving,
+                                  onPressed: _isSaving ? null : _saveChanges,
                                 ),
                               ],
+                              ),
                             ),
                           ),
                   ),
@@ -398,7 +349,15 @@ class _EditPersonalInformationScreenState
               ),
             ),
           ),
-          Positioned(right: 28, bottom: 105, child: SosButton(onTap: () {})),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, right: 22),
+                child: SosButton(onTap: () {}),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -408,22 +367,7 @@ class _EditPersonalInformationScreenState
     required String hintText,
     Widget? suffixIcon,
   }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: GoogleFonts.reemKufi(color: hintGray, fontSize: 15),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: softBeige,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: borderColor, width: 1.3),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: brown, width: 1.8),
-      ),
-    );
+    return MataFields.light(hintText: hintText, suffixIcon: suffixIcon);
   }
 }
 
@@ -434,13 +378,6 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: GoogleFonts.reemKufi(
-        color: _EditPersonalInformationScreenState.darkBrown,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return MataLabel(text);
   }
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../theme/mata_theme.dart';
+import '../widgets/road_scene.dart';
 import 'sign_in_screen.dart';
 import 'sign_up_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
-  static const Color brown = Color(0xFF79543B);
   static const Color softWhite = Color(0xFFFFFBF7);
 
   @override
@@ -15,81 +15,90 @@ class WelcomeScreen extends StatelessWidget {
     final screenSize = MediaQuery.sizeOf(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF1E1517),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/welcome_background.png',
-            fit: BoxFit.cover,
-          ),
+          // twilight, with the guiding path running to a warm horizon
+          const RoadScene(mood: RoadMood.welcome),
 
           Positioned(
-            top: screenSize.height * 0.09,
-            right: -screenSize.width * 0.003,
-            child: SizedBox(
-              width: screenSize.width * 1,
-              child: Image.asset(
-                'assets/images/mata_logo.png',
-                fit: BoxFit.fitWidth,
-              ),
-            ),
-          ),
-          Positioned(
-            top: screenSize.height * 0.405,
+            top: screenSize.height * 0.16,
             left: 0,
             right: 0,
-            child: Text(
-              'Welcome',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.reemKufi(
-                color: softWhite,
-                fontSize: 36,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              children: [
+                Text(
+                  "Ma'ta",
+                  style: MataText.display(
+                    color: softWhite,
+                    fontSize: 46,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'SYMPTOM GUIDANCE',
+                  style: MataText.body(
+                    color: softWhite.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 5.5,
+                  ),
+                ),
+              ],
             ),
           ),
 
           Positioned(
-            top: screenSize.height * 0.505,
-            left: 52,
-            right: 52,
-            child: Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 66,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignInScreen(),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: softWhite,
-                      side: const BorderSide(color: softWhite, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(33),
-                      ),
-                    ),
-                    child: Text(
-                      'SIGN IN',
-                      style: GoogleFonts.reemKufi(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                      ),
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                120,
+                24,
+                34 + MediaQuery.paddingOf(context).bottom,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    const Color(0xFF0C0807).withValues(alpha: 0.62),
+                    const Color(0xFF0C0807).withValues(alpha: 0.62),
+                    const Color(0x000C0807),
+                  ],
+                  stops: const [0, 0.22, 1],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Find your way to the right care.',
+                    style: MataText.display(
+                      color: softWhite,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w500,
+                      height: 1.25,
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 28),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 66,
-                  child: ElevatedButton(
+                  const SizedBox(height: 10),
+                  Text(
+                    'Describe how you feel in your own words. '
+                    "We'll guide you from there.",
+                    style: MataText.body(
+                      color: softWhite.withValues(alpha: 0.78),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  MataButton(
+                    label: 'Create account',
+                    style: MataButtonStyle.cream,
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -98,24 +107,22 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: softWhite,
-                      foregroundColor: brown,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(33),
-                      ),
-                    ),
-                    child: Text(
-                      'SIGN UP',
-                      style: GoogleFonts.reemKufi(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  MataButton(
+                    label: 'Sign in',
+                    style: MataButtonStyle.ghost,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignInScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],
