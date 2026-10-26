@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../services/analysis_notice.dart';
 import '../services/symptom_api_service.dart';
 import '../theme/mata_theme.dart';
+import '../widgets/analysis_notice_card.dart';
 import '../widgets/road_scene.dart';
 import '../widgets/stroke_background.dart';
 import '../widgets/mata_bottom_navigation_bar.dart';
@@ -30,6 +32,23 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSubmitting = false;
   bool _showError = false;
 
+  // Why the last analysis could not go ahead. The description is kept so the
+  // user can follow the suggestion and resubmit.
+  AnalysisNotice? _notice;
+
+  void _onAssessmentCompleted() {
+    if (!mounted) return;
+    setState(() {
+      _symptomsController.clear();
+      _notice = null;
+    });
+  }
+
+  void _onAnalysisNotice(AnalysisNotice notice) {
+    if (!mounted) return;
+    setState(() => _notice = notice);
+  }
+
   @override
   void dispose() {
     _symptomsController.dispose();
@@ -49,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     setState(() {
       _showError = false;
+      _notice = null;
       _isSubmitting = true;
     });
 
@@ -66,6 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => AnalyzingScreen(
             description: description,
             submissionId: submissionId,
+            onCompleted: _onAssessmentCompleted,
+            onNotice: _onAnalysisNotice,
           ),
         ),
       );
@@ -133,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 22),
                   SizedBox(
-                    height: 230,
+                    height: _notice == null ? 230 : 178,
                     child: MataGlass(
                       glow: true,
                       radius: 26,
@@ -181,50 +203,59 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    height: 46,
-                    child: _showError
-                        ? Padding(
-                            padding: const EdgeInsets.only(top: 12, left: 4),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.info_outline_rounded,
-                                  color: red,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text.rich(
-                                    TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: 'Symptoms required. ',
-                                          style: MataText.body(
-                                            color: red,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
+                  if (_notice != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 14),
+                      child: AnalysisNoticeCard(
+                        notice: _notice!,
+                        onDismiss: () => setState(() => _notice = null),
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 46,
+                      child: _showError
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 12, left: 4),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline_rounded,
+                                    color: red,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: 'Symptoms required. ',
+                                            style: MataText.body(
+                                              color: red,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                        ),
-                                        TextSpan(
-                                          text:
-                                              'Please describe your symptoms '
-                                              'before submitting.',
-                                          style: MataText.body(
-                                            color: red,
-                                            fontSize: 13,
+                                          TextSpan(
+                                            text:
+                                                'Please describe your symptoms '
+                                                'before submitting.',
+                                            style: MataText.body(
+                                              color: red,
+                                              fontSize: 13,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : null,
-                  ),
+                                ],
+                              ),
+                            )
+                          : null,
+                    ),
                   MataButton(
                     label: 'Submit',
                     loading: _isSubmitting,
@@ -267,10 +298,18 @@ class AnalyzingScreen extends StatefulWidget {
     super.key,
     required this.description,
     required this.submissionId,
+    required this.onCompleted,
+    required this.onNotice,
   });
 
   final String description;
   final String submissionId;
+
+  // Called once the whole assessment is saved, so home can clear the text.
+  final VoidCallback onCompleted;
+
+  // Called when the analysis cannot go ahead; home shows why.
+  final void Function(AnalysisNotice notice) onNotice;
 
   @override
   State<AnalyzingScreen> createState() => _AnalyzingScreenState();
@@ -284,7 +323,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   final SymptomApiService _apiService = SymptomApiService();
   final AssessmentService _assessmentService = AssessmentService();
 
-  String? _errorMessage;
+  AnalysisNotice? _error;
 
   @override
   void initState() {
@@ -294,8 +333,12 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
 
   Future<void> _analyzeSymptoms() async {
     setState(() {
-      _errorMessage = null;
+      _error = null;
     });
+
+    // Held here because the closures below outlive this screen.
+    final onCompleted = widget.onCompleted;
+    final onNotice = widget.onNotice;
 
     try {
       final result = await _apiService.extractSymptoms(widget.description);
@@ -303,7 +346,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       if (!mounted) {
         return;
       }
-      if (!_hasRecognizedSymptoms(result)) {
+      final notice = AnalysisNotice.fromExtraction(result, widget.description);
+
+      if (notice != null) {
         await _assessmentService.failSymptomSubmission(
           submissionId: widget.submissionId,
         );
@@ -312,12 +357,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           return;
         }
 
-        setState(() {
-          _errorMessage =
-              'We couldn’t identify any symptoms. '
-              'Please describe what you are experiencing '
-              'and try again.';
-        });
+        // Back to the description, with the reason and a suggestion.
+        onNotice(notice);
+        Navigator.of(context).pop();
         return;
       }
 
@@ -383,14 +425,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                   try {
                     await saveSubmission(<String, Map<String, dynamic>>{});
 
+                    onNotice(AnalysisNotice.noneConfirmed);
+
                     if (reviewContext.mounted) {
-                      ScaffoldMessenger.of(reviewContext).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'No symptoms were confirmed as present.',
-                          ),
-                        ),
-                      );
                       Navigator.of(reviewContext)
                           .popUntil((route) => route.isFirst);
                     }
@@ -413,7 +450,10 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                     builder: (_) => SymptomDetailsScreen(
                       symptoms: presentSymptoms,
                       modifiers: modifiers,
-                      onFinish: saveSubmission,
+                      onFinish: (details) async {
+                        await saveSubmission(details);
+                        onCompleted();
+                      },
                     ),
                   ),
                 );
@@ -446,7 +486,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           }),
         );
       }
-    } catch (_) {
+    } catch (error) {
       try {
         await _assessmentService.failSymptomSubmission(
           submissionId: widget.submissionId,
@@ -458,20 +498,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       }
 
       setState(() {
-        _errorMessage =
-            'We could not analyze your symptoms. '
-            'Make sure the server is running and try again.';
+        _error = AnalysisNotice.fromError(error);
       });
     }
-  }
-
-  bool _hasRecognizedSymptoms(Map<String, dynamic> result) {
-    const relevantFields = ['symptoms', 'negated', 'clarify', 'confirm'];
-
-    return relevantFields.any((field) {
-      final value = result[field];
-      return value is List && value.isNotEmpty;
-    });
   }
 
   bool _hasFollowUpQuestions(Map<String, dynamic> result) {
@@ -525,7 +554,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  if (_errorMessage == null)
+                  if (_error == null)
                     _buildLoadingContent()
                   else
                     _buildErrorContent(),
@@ -598,12 +627,29 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
             const Icon(Icons.error_outline_rounded, color: red, size: 40),
             const SizedBox(height: 12),
             Text(
-              _errorMessage!,
+              _error!.title,
+              textAlign: TextAlign.center,
+              style: MataText.display(fontSize: 19),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _error!.message,
               textAlign: TextAlign.center,
               style: MataText.body(
                 color: MataColors.ink,
                 fontSize: 14.5,
                 height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _error!.suggestion,
+              textAlign: TextAlign.center,
+              style: MataText.body(
+                color: MataColors.brown,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w500,
+                height: 1.55,
               ),
             ),
             const SizedBox(height: 20),

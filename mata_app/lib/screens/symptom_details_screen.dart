@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/mata_theme.dart';
+import '../widgets/severity_scale.dart';
 import '../widgets/stroke_background.dart';
 import 'symptom_completion_screen.dart';
 
@@ -384,26 +385,16 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
                                 ),
                               ),
                                 _sectionTitle('Severity'),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    for (final option in [
-                                      ('Mild', 'low'),
-                                      ('Moderate', 'moderate'),
-                                      ('Severe', 'high'),
-                                    ])
-                                      _choice(
-                                        label: option.$1,
-                                        selected: _severity == option.$2,
-                                        onTap: () => setState(() => _severity = option.$2),
-                                      ),
-                                    _choice(
-                                      label: "I'm not sure",
-                                      selected: _severity == null,
-                                      onTap: () => setState(() => _severity = null),
-                                    ),
-                                  ],
+                                SeverityScale(
+                                  value: _severity,
+                                  onChanged: (value) =>
+                                      setState(() => _severity = value),
+                                ),
+                                const SizedBox(height: 12),
+                                _choice(
+                                  label: "I'm not sure",
+                                  selected: _severity == null,
+                                  onTap: () => setState(() => _severity = null),
                                 ),
 
                                 _sectionTitle('Duration'),
