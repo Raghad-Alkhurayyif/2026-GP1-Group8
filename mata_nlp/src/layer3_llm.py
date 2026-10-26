@@ -386,6 +386,14 @@ class Layer3:
 
         for a in parsed["ambiguous"]:
             cands = [c for c in a["candidates"] if c not in found]
+            # The same question must not be asked twice. "my belly hurtss so
+            # bad" got Layer 1's abdominal-pain question on the corrected
+            # "belly hurts", then a second one from the model on the raw
+            # "belly hurtss", over a subset of the same options.
+            asked = [set(c.get("candidates", []))
+                     for c in result.get("clarify", [])]
+            if any(set(cands) <= q for q in asked):
+                continue
             if len(cands) >= 2:
                 # Name the family when every candidate belongs to the same one,
                 # and use that family's own question. Layer 1's clarifies all
