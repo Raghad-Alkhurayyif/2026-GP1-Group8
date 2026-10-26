@@ -33,6 +33,10 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
   late final List<_FollowUpQuestion> _questions;
 
   final Map<String, String> _selectedAnswers = {};
+
+  // "Which kind?" questions take several answers: each option is its own
+  // yes/no symptom in the dataset, so "burning" and "lower" can both be true.
+  final Map<String, Set<String>> _multiAnswers = {};
   final TextEditingController _otherPersonAgeController =
       TextEditingController();
 
@@ -81,6 +85,16 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
     bool? symptomsBelongToUser;
 
     for (final question in _questions) {
+      if (question.type == _QuestionType.clarify) {
+        for (final column in _multiAnswers[question.id] ?? const <String>{}) {
+          clarificationAnswers.add({
+            'matched_text': question.matchedText,
+            'selected_column': column,
+          });
+        }
+        continue;
+      }
+
       final answer = _selectedAnswers[question.id];
 
       if (answer == null) {
@@ -89,11 +103,7 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
 
       switch (question.type) {
         case _QuestionType.clarify:
-          clarificationAnswers.add({
-            'matched_text': question.matchedText,
-            'selected_column': answer,
-          });
-          break;
+          break; // answered above, with several choices
 
         case _QuestionType.confirmSubject:
           symptomsBelongToUser = answer == 'no';
@@ -290,11 +300,13 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
           ),
           // Which words this question comes from, so someone who described
           // two similar symptoms knows which one is being asked about.
-          if (question.type == _QuestionType.clarify &&
-              (question.matchedText?.trim().isNotEmpty ?? false)) ...[
+          if (question.type == _QuestionType.clarify) ...[
             const SizedBox(height: 4),
             Text(
-              'From what you wrote: “${question.matchedText!.trim()}”',
+              (question.matchedText?.trim().isNotEmpty ?? false)
+                  ? 'From what you wrote: “${question.matchedText!.trim()}”. '
+                        'Choose all that apply.'
+                  : 'Choose all that apply.',
               style: MataText.body(
                 color: MataColors.faint,
                 fontSize: 12.5,
@@ -339,12 +351,25 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
     required _FollowUpQuestion question,
     required _QuestionOption option,
   }) {
-    final isSelected = _selectedAnswers[question.id] == option.value;
+    final isMulti = question.type == _QuestionType.clarify;
+    final isSelected = isMulti
+        ? (_multiAnswers[question.id]?.contains(option.value) ?? false)
+        : _selectedAnswers[question.id] == option.value;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedAnswers[question.id] = option.value;
+          if (isMulti) {
+            final chosen = _multiAnswers.putIfAbsent(
+              question.id,
+              () => <String>{},
+            );
+            if (!chosen.remove(option.value)) {
+              chosen.add(option.value);
+            }
+          } else {
+            _selectedAnswers[question.id] = option.value;
+          }
         });
       },
       child: AnimatedContainer(
