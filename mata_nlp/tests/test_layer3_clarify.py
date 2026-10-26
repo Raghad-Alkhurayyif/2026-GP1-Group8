@@ -39,6 +39,23 @@ class NoDuplicateQuestion(unittest.TestCase):
         self.assertEqual([c["family"] for c in r["clarify"]],
                          ["abdominal-pain"])
 
+    def run_matches(self, text, matches):
+        layer3 = layer3_llm.Layer3(self.layer1, client=lambda _i, _t:
+                                   json.dumps({"matches": matches,
+                                               "ambiguous": []}))
+        return layer3.extend(self.layer1.extract(text))
+
+    def test_vague_leg_is_asked_not_assumed(self):
+        # Seen in the app: the model named `leg pain` for "my leg too" and it
+        # went in as asserted, where "my leg hurts" alone asks which part.
+        r = self.run_matches("my stomach hurts, and my leg too, and my feet", [
+            {"column": "leg pain", "matched_text": "leg"},
+            {"column": "foot or toe pain", "matched_text": "feet"}])
+        self.assertNotIn("leg pain", [s["column"] for s in r["symptoms"]])
+        self.assertIn("foot or toe pain", [s["column"] for s in r["symptoms"]])
+        self.assertEqual(sorted(c["family"] for c in r["clarify"]),
+                         ["abdominal-pain", "lower-limb-pain"])
+
     def test_a_new_question_is_still_asked(self):
         r = self.run_with("my belly hurtss so bad", [{
             "matched_text": "so bad",

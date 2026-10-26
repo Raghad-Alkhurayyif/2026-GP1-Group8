@@ -65,6 +65,8 @@ import os
 import re
 from pathlib import Path
 
+from vocab_utils import FAMILY_GENERIC
+
 ROOT = Path(__file__).resolve().parent.parent
 
 MODEL_NAME = "gemini-3.5-flash-lite"
@@ -347,7 +349,13 @@ class Layer3:
                     {**entry, "question": f"Do you have {m['column']}?",
                      "reason": status})
                 result.setdefault("excluded", []).append({**entry, "status": status})
-            elif self._always_asks(m["column"]):
+            elif (self._always_asks(m["column"])
+                  or self._is_generic(m["column"])):
+                # The generic member asks too. "my stomach hurts, and my leg
+                # too" left the leg to the model, which named `leg pain` and
+                # filed it as asserted. Layer 1 never does that with "my leg
+                # hurts": the generic member IS the vague case the family
+                # question exists for, so it asks hip, knee, ankle or foot.
                 # A family flagged `always` must never resolve silently, no
                 # matter which stage named the member. Layer 1 honours that;
                 # until October 2026 Layer 3 did not, because it only raised a
@@ -417,6 +425,11 @@ class Layer3:
         result["n_actionable"] = len(result.get("symptoms", []))
         result.setdefault("layers_run", []).append(f"llm:+{added}")
         return result
+
+    def _is_generic(self, column):
+        """True for the family's catch-all member: `leg pain`, `arm pain`."""
+        fam = self.layer1.vocab.get(column, {}).get("family")
+        return bool(fam) and FAMILY_GENERIC.get(fam) == column
 
     def _always_asks(self, column):
         """
