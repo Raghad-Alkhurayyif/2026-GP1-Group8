@@ -56,6 +56,15 @@ class NoDuplicateQuestion(unittest.TestCase):
         self.assertEqual(sorted(c["family"] for c in r["clarify"]),
                          ["abdominal-pain", "lower-limb-pain"])
 
+    def test_one_question_per_family(self):
+        # Two leg-or-foot mentions, one hip-knee-ankle-foot question; it takes
+        # several answers now.
+        r = self.layer1.extract(
+            "my belly hurts so bad. and my leg too, and my feet. "
+            "everything hurts")
+        families = [c["family"] for c in r["clarify"]]
+        self.assertEqual(len(families), len(set(families)))
+
     def test_a_new_question_is_still_asked(self):
         r = self.run_with("my belly hurtss so bad", [{
             "matched_text": "so bad",

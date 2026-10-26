@@ -736,6 +736,12 @@ class Layer1:
         resolved_families = {self._family_of(s["column"]) for s in symptoms}
         resolved_families.discard("")
         clarify = [c for c in clarify if c["family"] not in resolved_families]
+        # One question per family. "my belly hurts. and my leg too, and my
+        # feet. everything hurts" matched the lower-limb family twice and put
+        # the same hip-knee-ankle-foot question on the screen twice.
+        _asked = set()
+        clarify = [c for c in clarify
+                   if not (c["family"] in _asked or _asked.add(c["family"]))]
 
         # The offsets come free from _fragments and used to be discarded.
         # Layer 2 needs them: to judge whether a fragment it places is denied
