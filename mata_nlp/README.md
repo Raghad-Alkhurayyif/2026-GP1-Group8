@@ -42,9 +42,20 @@ also carries:
 | `display` | plain words for the same thing: "head cold", "black poo", "tingly" where `column` says `coryza`, `melena`, `paresthesia`. **Which one to render depends on who is reading.** A clinician's assessment should show `column` — the clinical term is the precise one and belongs in a medical record. Buttons, chips and anything the patient reads should show `display`, because nobody taps "melena". |
 | `matched_text` | the patient's own words that produced this finding. Show it beside the clinical term — "melena ← *black sticky stool*" lets a clinician verify the interpretation without re-reading the whole complaint. |
 | `layer` | `lexicon` or `llm`: whether the phrase was matched directly or inferred by the language model. The three display tiers belong here: *in the patient's words* / *patient confirmed when asked* / *inferred, not stated directly*. |
+| `subject` | whose finding it is: `self` (the user), `other` (the person they wrote about), `both`, or `unknown` when the text names someone else and gives no clue for this finding. |
 
 A `clarify` entry carries `candidate_displays` alongside `candidates`, for the
 buttons.
+
+When `confirm_subject` is true the app asks who the assessment is for, then
+calls `p.for_subject(out, "self")` or `p.for_subject(out, "other")` (the
+server's `POST /assign-subject`). That keeps only the chosen person's
+findings: "my sister has a fever but I don't, I only feel hot" answered *for
+me* keeps `feeling hot` and records `fever` as denied; answered *for my
+sister* it keeps only `fever`. `unknown` findings are kept either way, and
+whatever is left out comes back in `set_aside` so the review screen can show
+it and let the user correct us. See
+`src/subject.py`; tests in `tests/test_subject.py`.
 
 `feature_vector()` returns the 327-column vector that the condition
 classifier will consume: `1` asserted, `0` denied, `−1` unknown.

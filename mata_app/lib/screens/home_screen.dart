@@ -367,12 +367,15 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
 
       final description = widget.description;
 
-      Route<void> buildReviewRoute(Map<String, dynamic> followUpAnswers) {
+      Route<void> buildReviewRoute(
+        Map<String, dynamic> reviewResult,
+        Map<String, dynamic> followUpAnswers,
+      ) {
         return MaterialPageRoute(
           builder: (reviewContext) {
             return SymptomReviewScreen(
               originalDescription: description,
-              extractionResult: result,
+              extractionResult: reviewResult,
               followUpAnswers: followUpAnswers,
               currentStep: hasFollowUpQuestions ? 2 : 1,
               totalSteps: hasFollowUpQuestions ? 3 : 2,
@@ -387,7 +390,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                 final deniedSymptoms =
                     confirmedResult['negated'] as List? ?? [];
 
-                final modifiers = result['modifiers'] as List? ?? [];
+                final modifiers = reviewResult['modifiers'] as List? ?? [];
 
                 Future<void> saveSubmission(
                   Map<String, Map<String, dynamic>> details,
@@ -463,23 +466,92 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         );
       }
 
-      if (hasFollowUpQuestions) {
+      // The remaining questions for [questionResult], then the review.
+      // [subjectAnswers] carries who the assessment is for, once known.
+      Route<void> buildQuestionsRoute(
+        Map<String, dynamic> questionResult, {
+        Map<String, dynamic> subjectAnswers = const {},
+      }) {
+        return MaterialPageRoute(
+          builder: (questionsContext) {
+            return FollowUpQuestionsScreen(
+              extractionResult: questionResult,
+              onContinue: (answers) {
+                Navigator.of(questionsContext).push(
+                  buildReviewRoute(questionResult, {
+                    ...answers,
+                    ...subjectAnswers,
+                  }),
+                );
+              },
+            );
+          },
+        );
+      }
+
+      if (result['confirm_subject'] == true) {
+        // Who the assessment is for is asked FIRST, on its own. The answer
+        // decides which symptoms belong to that person, and the other
+        // questions should only be about their symptoms.
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (questionsContext) {
+            builder: (subjectContext) {
               return FollowUpQuestionsScreen(
-                extractionResult: result,
-                onContinue: (answers) {
-                  Navigator.of(questionsContext)
-                      .push(buildReviewRoute(answers));
+                extractionResult: const {'confirm_subject': true},
+                onContinue: (subjectAnswers) async {
+                  final isForCurrentUser =
+                      subjectAnswers['confirm_subject'] != false;
+
+                  final Map<String, dynamic> subjectResult;
+
+                  try {
+                    subjectResult = await _apiService.assignSubject(
+                      result,
+                      isForCurrentUser ? 'self' : 'other',
+                    );
+                  } catch (_) {
+                    if (subjectContext.mounted) {
+                      ScaffoldMessenger.of(subjectContext).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'We could not update your symptoms. '
+                            'Please try again.',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  if (!subjectContext.mounted) return;
+
+                  final answers = {
+                    'confirm_subject': subjectAnswers['confirm_subject'],
+                    'subject_age': subjectAnswers['subject_age'],
+                  };
+
+                  Navigator.of(subjectContext).push(
+                    _hasFollowUpQuestions(subjectResult)
+                        ? buildQuestionsRoute(
+                            subjectResult,
+                            subjectAnswers: answers,
+                          )
+                        : buildReviewRoute(subjectResult, {
+                            'clarifications': <Map<String, dynamic>>[],
+                            'confirmations': <Map<String, dynamic>>[],
+                            ...answers,
+                          }),
+                  );
                 },
               );
             },
           ),
         );
+      } else if (hasFollowUpQuestions) {
+        Navigator.of(context).pushReplacement(buildQuestionsRoute(result));
       } else {
         Navigator.of(context).pushReplacement(
-          buildReviewRoute(const {
+          buildReviewRoute(result, const {
             'clarifications': <Map<String, dynamic>>[],
             'confirmations': <Map<String, dynamic>>[],
             'confirm_subject': null,

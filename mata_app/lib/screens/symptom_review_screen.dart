@@ -36,6 +36,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
   late final List<_ReviewedSymptom> _symptoms;
   late final List<_ReviewedSymptom> _deniedSymptoms;
   late final List<_ReviewedSymptom> _conflictingSymptoms;
+  late final List<_ReviewedSymptom> _setAsideSymptoms;
 
 // true = user confirms the symptom is present
 // false = user confirms the symptom is absent
@@ -47,6 +48,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       ..._symptoms,
       ..._deniedSymptoms,
       ..._conflictingSymptoms,
+      ..._setAsideSymptoms,
     ];
     return all.every(
           (symptom) => _decisions.containsKey(symptom.column),
@@ -87,6 +89,48 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     _deniedSymptoms.removeWhere(
           (s) => conflicts.contains(s.column),
     );
+
+    final reviewedColumns = {
+      ..._symptoms.map((s) => s.column),
+      ..._deniedSymptoms.map((s) => s.column),
+      ..._conflictingSymptoms.map((s) => s.column),
+    };
+
+    _setAsideSymptoms = _buildSetAsideSymptoms()
+        .where((s) => !reviewedColumns.contains(s.column))
+        .toList();
+  }
+
+  // Findings left out because they seem to belong to the other person.
+  // Shown so the user can correct us, never dropped silently.
+  List<_ReviewedSymptom> _buildSetAsideSymptoms() {
+    final setAside = <_ReviewedSymptom>[];
+    final seenColumns = <String>{};
+
+    final items = widget.extractionResult['set_aside'];
+
+    if (items is List) {
+      for (final item in items) {
+        if (item is! Map) continue;
+
+        final column = item['column']?.toString();
+
+        if (column == null || column.isEmpty || !seenColumns.add(column)) {
+          continue;
+        }
+
+        setAside.add(
+          _ReviewedSymptom(
+            column: column,
+            displayName: _displayNameFromItem(item, column),
+            matchedText: item['matched_text']?.toString(),
+            layer: item['layer']?.toString(),
+          ),
+        );
+      }
+    }
+
+    return setAside;
   }
 
   List<_ReviewedSymptom> _buildReviewedSymptoms() {
@@ -274,6 +318,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       ..._symptoms,
       ..._deniedSymptoms,
       ..._conflictingSymptoms,
+      ..._setAsideSymptoms,
     ];
 
     Map<String, dynamic> toJson(
@@ -459,7 +504,8 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
   Widget _buildSymptomList() {
     if (_symptoms.isEmpty &&
         _deniedSymptoms.isEmpty &&
-        _conflictingSymptoms.isEmpty) {
+        _conflictingSymptoms.isEmpty &&
+        _setAsideSymptoms.isEmpty) {
       return Center(
         child: Text(
           'No symptoms were identified.\n'
@@ -508,6 +554,22 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
                 'symptoms. Please tell us whether you currently '
                 'have them.',
             symptoms: _conflictingSymptoms,
+            isOriginallyDenied: false,
+          ),
+
+        if (_setAsideSymptoms.isNotEmpty)
+          _buildSection(
+            dot: const Color(0xFF9C8B80),
+            title: widget.extractionResult['subject'] == 'other'
+                ? 'Symptoms We Think Are Yours'
+                : 'Symptoms We Think Belong to Someone Else',
+            description: widget.extractionResult['subject'] == 'other'
+                ? 'We left these out because they seem to be about you, '
+                    'not the person you are assessing. Tell us if they '
+                    'have them too.'
+                : 'We left these out because they seem to be about '
+                    'someone else. Tell us if you have them too.',
+            symptoms: _setAsideSymptoms,
             isOriginallyDenied: false,
           ),
       ],

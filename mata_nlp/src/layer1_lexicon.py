@@ -61,6 +61,7 @@ from loose_match import LooseMatcher
 from vocab_utils import (split_compositional, anatomical_root,
                          FAMILY_GENERIC, FAMILY_GLUE, FAMILY_SYNONYMS)
 import modifiers as mods_mod
+import subject as subject_mod
 
 # Not a context status: the match is real and the patient's age rules it out.
 AGE_MISMATCH = "age_mismatch"
@@ -524,6 +525,57 @@ class Layer1:
             norm, [c["assess_span"] for c in cands],
             original=text, idx_map=idx_map)
 
+        # Whose finding each match is, judged BEFORE the duplicates collapse
+        # and before DEPENDENT becomes PRESENT below - both throw away exactly
+        # what this needs. "my sister has a fever and I have a fever too" is
+        # one column matched twice, once for each person, and it belongs to
+        # both of them. See src/subject.py.
+        whose = {}
+        for i, c in enumerate(cands):
+            st = statuses.get(i, PRESENT)
+            who = subject_mod.subject_of(norm, c["span"], st)
+            reply = subject_mod.follow_up(norm, c["span"])
+            info = whose.setdefault((c["kind"], c["name"]), {
+                "subject": None, "reply": None, "denied_subject": None,
+                "denied_reply": None, "present_for_other": False})
+            if st == NEGATED:
+                # A denial says who does NOT have it. "my sister has a fever
+                # but i do not have a fever" is the sister's fever, denied by
+                # the user; "I don't have a fever but my son does" is the
+                # son's fever.
+                info["denied_subject"] = subject_mod.combine(
+                    info["denied_subject"], who)
+                info["denied_reply"] = info["denied_reply"] or reply
+                continue
+            asserted = st in (PRESENT, DEPENDENT)
+            if asserted and (
+                    (who == subject_mod.OTHER and reply == "self_has")
+                    or (who == subject_mod.SELF and reply == "other_has")):
+                # "my sister has a fever and i have one too"
+                who = subject_mod.BOTH
+            elif reply:
+                info["reply"] = reply
+            if st == FAMILY and who == subject_mod.OTHER:
+                info["present_for_other"] |= subject_mod.present_for_other(
+                    norm, c["span"])
+            info["subject"] = subject_mod.combine(info["subject"], who)
+        for info in whose.values():
+            if info["subject"] is None:
+                info["subject"] = info["denied_subject"]
+                info["reply"] = info["denied_reply"]
+            elif (info["subject"] == subject_mod.OTHER
+                  and info["denied_subject"] == subject_mod.SELF):
+                info["reply"] = "denied"
+            if info["subject"] in (subject_mod.OTHER, subject_mod.BOTH,
+                                   subject_mod.UNKNOWN) \
+                    or info["reply"] == "other_has":
+                # Somebody else has, or may have, one of these findings, even
+                # where the context rules saw no relative: "she has a fever
+                # and i have a headache", "I don't have a fever but my son
+                # does". `unknown` only arises when someone else is named.
+                if age is None:
+                    about_dependent = True
+
         # The same column may have been matched twice with different contexts.
         # Keep the strongest claim: a symptom the patient asserts about
         # themselves now outranks the same symptom mentioned as a relative's,
@@ -583,9 +635,13 @@ class Layer1:
                         negated.append({"column": m, "matched_text": c["matched"],
                                         "layer": "lexicon"})
                 elif status != PRESENT:
+                    # `family` lets src/subject.py turn these back into one
+                    # question, not N asserted members, if they turn out to
+                    # belong to the person the assessment is for.
                     for m in members:
                         excluded.append({"column": m, "matched_text": c["matched"],
-                                         "layer": "lexicon", "status": status})
+                                         "layer": "lexicon", "status": status,
+                                         "family": c["name"]})
                 else:
                     left = [m for m in members
                             if m not in self._denied_members(c["name"], denied_text)]
@@ -694,6 +750,31 @@ class Layer1:
         unmatched_spans = [(a, b) for _, a, b in _frags]
         covered = len(norm) - consumed.count(False)
 
+        # Whose finding it is, on every finding. A family match lends its
+        # label to the members it was expanded into.
+        by_column, by_family = {}, {}
+        for (kind, name), info in whose.items():
+            tag = {"subject": info["subject"]}
+            if info["reply"]:
+                tag["reply"] = info["reply"]
+            if info["present_for_other"]:
+                tag["present_for_other"] = True
+            if kind == "family":
+                by_family[name] = tag
+                for m in self._members(name):
+                    by_column.setdefault(m, tag)
+            else:
+                by_column[name] = tag
+                fam = self._family_of(name)
+                if fam:
+                    by_family.setdefault(fam, tag)
+        unknown = {"subject": subject_mod.UNKNOWN}
+        for group in (symptoms, negated, excluded, confirm):
+            for f in group:
+                f.update(by_column.get(f["column"], unknown))
+        for c in clarify:
+            c.update(by_family.get(c["family"], unknown))
+
         # A human-readable label on every finding.
         #
         # `column` is the vocabulary's own name, and some of those names are
@@ -737,7 +818,8 @@ class Layer1:
                 {"column": s["column"], "level": self.vocab[s["column"]]["red_flag"],
                  "reason": self.vocab[s["column"]]["red_flag_reason"],
                  "matched_text": s["matched_text"],
-                 "display": self.display_label(s["column"])}
+                 "display": self.display_label(s["column"]),
+                 "subject": s["subject"]}
                 for s in symptoms if self.vocab[s["column"]]["red_flag"]
             ],
             "unmatched": unmatched,

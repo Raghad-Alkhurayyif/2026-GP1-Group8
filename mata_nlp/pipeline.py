@@ -35,6 +35,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from layer1_lexicon import Layer1
 import layer2_embed
 import layer3_llm
+import subject
 
 
 class Pipeline:
@@ -143,6 +144,14 @@ class Pipeline:
                 probs, known=settled, rounds_done=rounds_done,
                 emergency=emergency, age=age)
         return r
+
+    def for_subject(self, result, who):
+        """
+        `result` with only the findings of the person the assessment is for,
+        once the user has answered "Are you completing this assessment for
+        someone else?". `who` is "self" or "other". See src/subject.py.
+        """
+        return subject.for_subject(result, who, vocab=self.layer1.vocab)
 
 
 if __name__ == "__main__":
