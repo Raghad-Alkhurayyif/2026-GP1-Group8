@@ -288,6 +288,20 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
               height: 1.5,
             ),
           ),
+          // Which words this question comes from, so someone who described
+          // two similar symptoms knows which one is being asked about.
+          if (question.type == _QuestionType.clarify &&
+              (question.matchedText?.trim().isNotEmpty ?? false)) ...[
+            const SizedBox(height: 4),
+            Text(
+              'From what you wrote: “${question.matchedText!.trim()}”',
+              style: MataText.body(
+                color: MataColors.faint,
+                fontSize: 12.5,
+                height: 1.4,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           if (isYesNoQuestion)
             Row(
