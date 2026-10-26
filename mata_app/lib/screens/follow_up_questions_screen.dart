@@ -149,6 +149,9 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
       width: double.infinity,
       height: 92,
       child: Stack(
+        // The logo is nudged up and left into the screen margin, past this
+        // header's edges. Clipping it there cut off its left tail and top.
+        clipBehavior: Clip.none,
         children: [
           const MataCornerLogo(),
           Positioned(

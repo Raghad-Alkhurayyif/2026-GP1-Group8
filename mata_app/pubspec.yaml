@@ -26,6 +26,7 @@ flutter:
   assets:
     - assets/images/welcome_background.png
     - assets/images/mata_logo.png
+    - assets/images/mata_logo_corner.png
     - assets/images/sign_in_button_background.png
     - assets/images/background.png
   

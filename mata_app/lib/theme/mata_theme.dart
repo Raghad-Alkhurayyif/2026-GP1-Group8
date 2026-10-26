@@ -415,11 +415,16 @@ class MataCornerLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Transform.translate(
       offset: const Offset(-28, -17),
+      // A copy pre-scaled to 4x the size it is shown at, so every screen
+      // does not decode and shrink the 6432 px original. The offset reaches
+      // into the screen margin: a parent that clips (a Stack does by
+      // default) cuts the logo off, so such parents need Clip.none.
       child: Image.asset(
-        'assets/images/mata_logo.png',
+        'assets/images/mata_logo_corner.png',
         width: 90,
         height: 55,
         fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
       ),
     );
   }
