@@ -4,7 +4,10 @@ import '../theme/mata_theme.dart';
 import '../widgets/stroke_background.dart';
 
 class SymptomCompletionScreen extends StatelessWidget {
-  const SymptomCompletionScreen({super.key});
+  const SymptomCompletionScreen({super.key, this.forSomeoneElse = false});
+
+  // True when the assessment is for someone other than the user.
+  final bool forSomeoneElse;
 
   static const Color brown = Color(0xFF79543B);
   static const Color softBeige = Color(0xFFF7F3EB);
@@ -62,8 +65,8 @@ class SymptomCompletionScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Your symptoms and their details '
-                    'have been saved successfully.',
+                    '${forSomeoneElse ? 'Their' : 'Your'} symptoms and '
+                    'their details have been saved successfully.',
                     textAlign: TextAlign.center,
                     style: MataText.body(
                       fontSize: 14,

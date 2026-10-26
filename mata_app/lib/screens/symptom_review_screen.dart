@@ -37,6 +37,11 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
   late final List<_ReviewedSymptom> _deniedSymptoms;
   late final List<_ReviewedSymptom> _conflictingSymptoms;
   late final List<_ReviewedSymptom> _setAsideSymptoms;
+  late final List<_ReviewedSymptom> _possibleSymptoms;
+
+  // True when the user said the assessment is for someone else, so every
+  // line on this screen talks about "they", not "you".
+  bool get _forSomeoneElse => widget.extractionResult['subject'] == 'other';
 
 // true = user confirms the symptom is present
 // false = user confirms the symptom is absent
@@ -49,6 +54,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       ..._deniedSymptoms,
       ..._conflictingSymptoms,
       ..._setAsideSymptoms,
+      ..._possibleSymptoms,
     ];
     return all.every(
           (symptom) => _decisions.containsKey(symptom.column),
@@ -99,15 +105,34 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     _setAsideSymptoms = _buildSetAsideSymptoms()
         .where((s) => !reviewedColumns.contains(s.column))
         .toList();
+
+    reviewedColumns.addAll(_setAsideSymptoms.map((s) => s.column));
+
+    // Mentioned only as a possibility ("I might have a cough"). Asked here
+    // instead of on a page of their own before this one.
+    _possibleSymptoms = _buildItems(widget.extractionResult['confirm'])
+        .where((s) => !reviewedColumns.contains(s.column))
+        .toList();
+
+    // Start from what the model understood, so the user only has to change
+    // what is wrong. Conflicting, set-aside and possible symptoms stay
+    // unanswered: the model has no reading to offer for those.
+    for (final symptom in _symptoms) {
+      _decisions[symptom.column] = true;
+    }
+    for (final symptom in _deniedSymptoms) {
+      _decisions[symptom.column] = false;
+    }
   }
 
   // Findings left out because they seem to belong to the other person.
   // Shown so the user can correct us, never dropped silently.
-  List<_ReviewedSymptom> _buildSetAsideSymptoms() {
+  List<_ReviewedSymptom> _buildSetAsideSymptoms() =>
+      _buildItems(widget.extractionResult['set_aside']);
+
+  List<_ReviewedSymptom> _buildItems(dynamic items) {
     final setAside = <_ReviewedSymptom>[];
     final seenColumns = <String>{};
-
-    final items = widget.extractionResult['set_aside'];
 
     if (items is List) {
       for (final item in items) {
@@ -319,6 +344,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       ..._deniedSymptoms,
       ..._conflictingSymptoms,
       ..._setAsideSymptoms,
+      ..._possibleSymptoms,
     ];
 
     Map<String, dynamic> toJson(
@@ -438,7 +464,9 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Let’s confirm your symptoms',
+          _forSomeoneElse
+              ? 'Let’s confirm their symptoms'
+              : 'Let’s confirm your symptoms',
           style: MataText.display(fontSize: 26),
         ),
         const SizedBox(height: 6),
@@ -505,7 +533,8 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     if (_symptoms.isEmpty &&
         _deniedSymptoms.isEmpty &&
         _conflictingSymptoms.isEmpty &&
-        _setAsideSymptoms.isEmpty) {
+        _setAsideSymptoms.isEmpty &&
+        _possibleSymptoms.isEmpty) {
       return Center(
         child: Text(
           'No symptoms were identified.\n'
@@ -529,7 +558,9 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
           _buildSection(
             dot: brown,
             title: 'Detected Symptoms',
-            description: 'Are you currently experiencing these symptoms?',
+            description: _forSomeoneElse
+                ? 'Are they currently experiencing these symptoms?'
+                : 'Are you currently experiencing these symptoms?',
             symptoms: _symptoms,
             isOriginallyDenied: false,
           ),
@@ -538,9 +569,11 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
           _buildSection(
             dot: const Color(0xFF9C8B80),
             title: 'Symptoms Understood as Denied',
-            description:
-                'We understood that you do not have these '
-                'symptoms. Please correct us if this is wrong.',
+            description: _forSomeoneElse
+                ? 'We understood that they do not have these '
+                    'symptoms. Please correct us if this is wrong.'
+                : 'We understood that you do not have these '
+                    'symptoms. Please correct us if this is wrong.',
             symptoms: _deniedSymptoms,
             isOriginallyDenied: true,
           ),
@@ -549,10 +582,13 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
           _buildSection(
             dot: MataColors.amber,
             title: 'Symptoms Needing Clarification',
-            description:
-                'We found conflicting information about these '
-                'symptoms. Please tell us whether you currently '
-                'have them.',
+            description: _forSomeoneElse
+                ? 'We found conflicting information about these '
+                    'symptoms. Please tell us whether they currently '
+                    'have them.'
+                : 'We found conflicting information about these '
+                    'symptoms. Please tell us whether you currently '
+                    'have them.',
             symptoms: _conflictingSymptoms,
             isOriginallyDenied: false,
           ),
@@ -570,6 +606,19 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
                 : 'We left these out because they seem to be about '
                     'someone else. Tell us if you have them too.',
             symptoms: _setAsideSymptoms,
+            isOriginallyDenied: false,
+          ),
+
+        if (_possibleSymptoms.isNotEmpty)
+          _buildSection(
+            dot: MataColors.amber,
+            title: 'Symptoms Mentioned as Possible',
+            description: _forSomeoneElse
+                ? 'You mentioned these as a possibility. '
+                    'Do they have them?'
+                : 'You mentioned these as a possibility. '
+                    'Do you have them?',
+            symptoms: _possibleSymptoms,
             isOriginallyDenied: false,
           ),
       ],
@@ -689,7 +738,9 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _buildChoiceButton(
-                  label: isOriginallyDenied ? 'I have it' : 'Yes',
+                  label: isOriginallyDenied
+                      ? (_forSomeoneElse ? 'They have it' : 'I have it')
+                      : 'Yes',
                   isSelected: selected == true,
                   onPressed: () {
                     setState(() {
@@ -698,7 +749,11 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
                   },
                 ),
                 _buildChoiceButton(
-                  label: isOriginallyDenied ? "I don't have it" : 'No',
+                  label: isOriginallyDenied
+                      ? (_forSomeoneElse
+                          ? "They don't have it"
+                          : "I don't have it")
+                      : 'No',
                   isSelected: selected == false,
                   onPressed: () {
                     setState(() {

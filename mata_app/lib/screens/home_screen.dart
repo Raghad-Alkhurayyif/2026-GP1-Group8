@@ -453,6 +453,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                     builder: (_) => SymptomDetailsScreen(
                       symptoms: presentSymptoms,
                       modifiers: modifiers,
+                      forSomeoneElse:
+                          followUpAnswers['confirm_subject'] == false,
                       onFinish: (details) async {
                         await saveSubmission(details);
                         onCompleted();
@@ -476,6 +478,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           builder: (questionsContext) {
             return FollowUpQuestionsScreen(
               extractionResult: questionResult,
+              forSomeoneElse: subjectAnswers['confirm_subject'] == false,
               onContinue: (answers) {
                 Navigator.of(questionsContext).push(
                   buildReviewRoute(questionResult, {
@@ -576,14 +579,15 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   }
 
   bool _hasFollowUpQuestions(Map<String, dynamic> result) {
+    // "Is this symptom present?" is asked on the review screen, where every
+    // finding is confirmed anyway, so only "which kind?" questions and who
+    // the assessment is for need a page of their own.
     final clarify = result['clarify'];
-    final confirm = result['confirm'];
 
     final hasClarification = clarify is List && clarify.isNotEmpty;
-    final hasConfirmation = confirm is List && confirm.isNotEmpty;
     final needsSubjectConfirmation = result['confirm_subject'] == true;
 
-    return hasClarification || hasConfirmation || needsSubjectConfirmation;
+    return hasClarification || needsSubjectConfirmation;
   }
 
   @override

@@ -11,7 +11,11 @@ class FollowUpQuestionsScreen extends StatefulWidget {
     super.key,
     required this.extractionResult,
     required this.onContinue,
+    this.forSomeoneElse = false,
   });
+
+  // True when the user already said the assessment is for someone else.
+  final bool forSomeoneElse;
 
   final Map<String, dynamic> extractionResult;
 
@@ -89,14 +93,6 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
           clarificationAnswers.add({
             'matched_text': question.matchedText,
             'selected_column': answer,
-          });
-          break;
-
-        case _QuestionType.confirm:
-          confirmationAnswers.add({
-            'column': question.column,
-            'matched_text': question.matchedText,
-            'confirmed': answer == 'yes',
           });
           break;
 
@@ -181,7 +177,9 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
         Text('A few more details', style: MataText.display(fontSize: 26)),
         const SizedBox(height: 6),
         Text(
-          'Help us understand your symptoms better.',
+          widget.forSomeoneElse
+              ? 'Help us understand their symptoms better.'
+              : 'Help us understand your symptoms better.',
           style: MataText.body(
             color: MataColors.muted,
             fontSize: 13.5,
@@ -446,45 +444,6 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
       }
     }
 
-    final seenConfirmationColumns = <String>{};
-    final rawConfirmations = result['confirm'];
-
-    if (rawConfirmations is List) {
-      for (var index = 0; index < rawConfirmations.length; index++) {
-        final rawQuestion = rawConfirmations[index];
-
-        if (rawQuestion is! Map) {
-          continue;
-        }
-
-        final column = rawQuestion['column']?.toString();
-
-        if (column == null ||
-            column.trim().isEmpty ||
-            !seenConfirmationColumns.add(column)) {
-          continue;
-        }
-        final matchedText = rawQuestion['matched_text']?.toString();
-
-        questions.add(
-          _FollowUpQuestion(
-            id: 'confirm_$index',
-            type: _QuestionType.confirm,
-            question:
-                rawQuestion['question']?.toString() ??
-                'Are you experiencing '
-                    '"${matchedText ?? column}"?',
-            options: const [
-              _QuestionOption(value: 'yes', label: 'Yes'),
-              _QuestionOption(value: 'no', label: 'No'),
-            ],
-            column: column,
-            matchedText: matchedText,
-          ),
-        );
-      }
-    }
-
     if (result['confirm_subject'] == true) {
       questions.add(
         const _FollowUpQuestion(
@@ -514,7 +473,9 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
   }
 }
 
-enum _QuestionType { clarify, confirm, confirmSubject }
+// "Is this symptom present?" is not asked here: the review screen confirms
+// every finding, so asking it twice was redundant.
+enum _QuestionType { clarify, confirmSubject }
 
 class _FollowUpQuestion {
   const _FollowUpQuestion({

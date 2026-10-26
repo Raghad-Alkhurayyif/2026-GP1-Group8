@@ -12,7 +12,11 @@ class SymptomDetailsScreen extends StatefulWidget {
     required this.symptoms,
     required this.modifiers,
     required this.onFinish,
+    this.forSomeoneElse = false,
   });
+
+  // True when the assessment is for someone other than the user.
+  final bool forSomeoneElse;
 
   // Only user-confirmed PRESENT symptoms.
   final List<dynamic> symptoms;
@@ -235,7 +239,11 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
       // Navigate to the temporary completion screen
       // only after Firestore saving succeeds.
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SymptomCompletionScreen()),
+        MaterialPageRoute(
+          builder: (_) => SymptomCompletionScreen(
+            forSomeoneElse: widget.forSomeoneElse,
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
