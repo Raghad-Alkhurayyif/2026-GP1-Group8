@@ -77,7 +77,6 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
     }
 
     final clarificationAnswers = <Map<String, dynamic>>[];
-    final confirmationAnswers = <Map<String, dynamic>>[];
 
     bool? symptomsBelongToUser;
 
@@ -104,7 +103,9 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
 
     widget.onContinue({
       'clarifications': clarificationAnswers,
-      'confirmations': confirmationAnswers,
+      // Presence is confirmed on the review screen now; kept empty so the
+      // answers keep the shape the review screen reads.
+      'confirmations': <Map<String, dynamic>>[],
       'confirm_subject': symptomsBelongToUser,
       'subject_age': _isForOtherPerson
           ? int.parse(_otherPersonAgeController.text.trim())
@@ -486,7 +487,6 @@ class _FollowUpQuestion {
     required this.type,
     required this.question,
     required this.options,
-    this.column,
     this.matchedText,
   });
 
@@ -494,7 +494,6 @@ class _FollowUpQuestion {
   final _QuestionType type;
   final String question;
   final List<_QuestionOption> options;
-  final String? column;
   final String? matchedText;
 }
 
