@@ -122,6 +122,7 @@ class AuthService {
     final savedData = userSnapshot.data();
 
     await _deleteSymptomSubmissions(user.uid);
+    await _deleteEmergencyContacts(user.uid);
     await userDocument.delete();
 
     try {
@@ -141,6 +142,33 @@ class AuthService {
         .collection('users')
         .doc(userId)
         .collection('symptomSubmissions');
+
+    while (true) {
+      final snapshot = await collection.limit(400).get();
+
+      if (snapshot.docs.isEmpty) {
+        break;
+      }
+
+      final batch = _firestore.batch();
+
+      for (final document in snapshot.docs) {
+        batch.delete(document.reference);
+      }
+
+      await batch.commit();
+
+      if (snapshot.docs.length < 400) {
+        break;
+      }
+    }
+  }
+
+  Future<void> _deleteEmergencyContacts(String userId) async {
+    final collection = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('emergencyContacts');
 
     while (true) {
       final snapshot = await collection.limit(400).get();
