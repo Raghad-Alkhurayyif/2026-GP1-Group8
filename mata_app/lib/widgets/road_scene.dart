@@ -42,6 +42,16 @@ class RoadMood {
     hills: 0,
   );
 
+  /// SOS: a darker dusk with the path low and almost still, so nothing
+  /// competes with the countdown.
+  static const RoadMood sos = RoadMood(
+    sky: .34,
+    horizon: .6,
+    speed: .02,
+    curve: 1,
+    hills: 0,
+  );
+
   static const RoadMood analyzing = RoadMood(
     sky: 1,
     horizon: .47,

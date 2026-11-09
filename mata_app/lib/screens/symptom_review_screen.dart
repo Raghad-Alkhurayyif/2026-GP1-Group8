@@ -446,7 +446,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
           Positioned(
             right: 0,
             top: -2,
-            child: SosButton(onTap: () {}),
+            child: const SosButton(),
           ),
           Positioned(
             left: 0,

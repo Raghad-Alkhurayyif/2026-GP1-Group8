@@ -42,7 +42,9 @@ class EmergencyContactService {
     });
   }
 
-  Future<void> addContact(
+  /// Saves a new contact and returns its id, so the screen can make it the
+  /// default when the user asks for that.
+  Future<String> addContact(
     String name,
     String phone,
   ) {
@@ -56,11 +58,13 @@ class EmergencyContactService {
         normalizedPhone,
       );
 
-      await contacts.add({
+      final document = await contacts.add({
         'name': cleanedName,
         'phoneNumber': normalizedPhone,
         'isDefault': false,
       });
+
+      return document.id;
     });
   }
 

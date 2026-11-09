@@ -283,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, right: 22),
-                child: SosButton(onTap: () {}),
+                child: const SosButton(),
               ),
             ),
           ),
@@ -643,7 +643,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, right: 22),
-                child: SosButton(onTap: () {}),
+                child: const SosButton(),
               ),
             ),
           ),

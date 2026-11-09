@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../screens/sos_screen.dart';
 import '../theme/mata_theme.dart';
 
 class SosButton extends StatelessWidget {
   const SosButton({
-    required this.onTap,
+    this.onTap,
     super.key,
   });
 
-  final VoidCallback onTap;
+  /// Left out, the button opens the SOS flow (PBI-19).
+  final VoidCallback? onTap;
 
   static const Color red = Color(0xFFB71616);
 
@@ -30,7 +32,7 @@ class SosButton extends StatelessWidget {
         color: red,
         shape: const StadiumBorder(),
         child: InkWell(
-          onTap: onTap,
+          onTap: onTap ?? () => openSos(context),
           customBorder: const StadiumBorder(),
           child: SizedBox(
             height: 36,

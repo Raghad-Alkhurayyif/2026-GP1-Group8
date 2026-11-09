@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'change_password_screen.dart';
 import 'edit_personal_information_screen.dart';
+import 'emergency_contacts_screen.dart';
+import '../sos/location_service.dart';
 import '../theme/mata_theme.dart';
 import '../widgets/delete_account_dialog.dart';
 import '../widgets/sos_button.dart';
@@ -81,6 +83,58 @@ class AccountScreen extends StatelessWidget {
 
     if (context.mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
+  /// PBI-23 AC 4: after a refusal the app does not ask again during SOS,
+  /// so the way to turn location back on lives here.
+  Future<void> _showLocationAccess(BuildContext context) async {
+    final openSettings = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: MataColors.softWhite,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: Text(
+            'Location Access for SOS',
+            style: MataText.display(fontSize: 21, color: darkBrown),
+          ),
+          content: Text(
+            'When you use SOS, Ma’ta adds your current location to the alert '
+            'so your contact can find you. It is used only for the alert and '
+            'is never stored.\n\nYou can allow or stop location access for '
+            'Ma’ta in your phone’s settings.',
+            style: MataText.body(color: brown, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: Text('Close', style: MataText.body(color: brown)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: Text(
+                'Open Settings',
+                style: MataText.body(
+                  color: darkBrown,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (openSettings == true) {
+      await LocationService().openAppSettings();
     }
   }
 
@@ -248,9 +302,26 @@ class AccountScreen extends StatelessWidget {
                                       height: 1,
                                       color: borderColor,
                                     ),
-                                    const _ActionRow(
+                                    _ActionRow(
                                       label: 'Emergency Contacts',
-                                      onTap: null,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const EmergencyContactsScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    const Divider(
+                                      height: 1,
+                                      color: borderColor,
+                                    ),
+                                    _ActionRow(
+                                      label: 'Location Access for SOS',
+                                      onTap: () {
+                                        _showLocationAccess(context);
+                                      },
                                     ),
                                     const Divider(
                                       height: 1,
@@ -342,7 +413,7 @@ class AccountScreen extends StatelessWidget {
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, right: 22),
-                child: SosButton(onTap: () {}),
+                child: const SosButton(),
               ),
             ),
           ),

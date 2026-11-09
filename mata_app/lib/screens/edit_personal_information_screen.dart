@@ -354,7 +354,7 @@ class _EditPersonalInformationScreenState
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, right: 22),
-                child: SosButton(onTap: () {}),
+                child: const SosButton(),
               ),
             ),
           ),

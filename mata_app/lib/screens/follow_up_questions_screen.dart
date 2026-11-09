@@ -168,7 +168,7 @@ class _FollowUpQuestionsScreenState extends State<FollowUpQuestionsScreen> {
           Positioned(
             right: 0,
             top: -2,
-            child: SosButton(onTap: () {}),
+            child: const SosButton(),
           ),
           Positioned(
             left: 0,
