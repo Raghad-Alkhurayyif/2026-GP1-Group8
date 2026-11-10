@@ -69,7 +69,12 @@ from vocab_utils import FAMILY_GENERIC
 
 ROOT = Path(__file__).resolve().parent.parent
 
-MODEL_NAME = "gemini-3.5-flash-lite"
+# Chosen on the dev halves of both gold sets (348 sentences, Nov 2026): 90.8%
+# of symptoms found against 81.3% for gemini-3.5-flash-lite, with no more
+# extra symptoms and no failed calls. Thinking is kept LOW; at the default
+# level the same model averaged over 7 s a call and often hit the timeout.
+MODEL_NAME = "gemini-3.5-flash"
+THINKING_LEVEL = "LOW"
 TIMEOUT_SECONDS = 10
 MAX_UNMATCHED_CHARS = 2000
 
@@ -285,6 +290,8 @@ class Layer3:
                     system_instruction=system_instruction,
                     response_mime_type="application/json",
                     response_schema=RESPONSE_SCHEMA,
+                    thinking_config=types.ThinkingConfig(
+                        thinking_level=THINKING_LEVEL),
                 ),
             )
             return r.text or ""
