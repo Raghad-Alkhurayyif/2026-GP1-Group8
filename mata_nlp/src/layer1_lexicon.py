@@ -75,6 +75,28 @@ SCORE_COMPOSED = 0.85
 QUALIFIER_SENSATIONS = {"sharp", "burning"}
 
 
+HAVING = {"have", "having", "had", "has", "get", "getting", "gets", "got",
+          "suffer", "suffers", "suffered", "suffering", "experience",
+          "experiences", "experienced"}
+# NOT "keep"/"keeps"/"kept". They look like having-verbs but the only
+# sentence in which one sits DIRECTLY before these words is "i try to keep
+# fit", which is exercise. "i keep having fits" is already licensed by
+# "having", so nothing is lost by leaving them out.
+QUANTITY = {"bad", "awful", "terrible", "painful", "trapped", "excess",
+            "excessive", "lots", "loads", "constant", "frequent", "more"}
+DETERMINER = {"a", "an", "the", "my", "his", "her", "their", "these",
+              "those", "some", "any"}
+
+LICENSED = {
+    "fit": HAVING | QUANTITY | DETERMINER,
+    "fits": HAVING | QUANTITY | DETERMINER,
+    # No determiners for these two: "the wind" and "the gas" are the
+    # non-medical senses, so a determiner must not license them.
+    "wind": HAVING | QUANTITY,
+    "gas": HAVING | QUANTITY,
+}
+
+
 class Layer1:
     # use_medspacy defaults to False: see the note on ContextAssessor.
     # The shipped behaviour must not change because an optional package
@@ -346,6 +368,62 @@ class Layer1:
         return {m for m in self._members(family)
                 if self._says(self._distinguishing(m, family), denied_text)}
 
+    # AMBIGUOUS SINGLE WORDS, October 2026.
+    #
+    # Five lexicon phrases out of 1,712 are single everyday words whose
+    # commonest English sense is not medical at all. Found by scanning the
+    # lexicon for one-word entries that are ordinary non-clinical vocabulary,
+    # then confirmed against the gold sets:
+    #
+    #     "ring finger looks puffy and my ring barely FITS"  ->  SEIZURES
+    #
+    # That is a real Gold Set 2 sentence. `fits` is a verb about jewellery and
+    # the component recorded a seizure. `wind` and `gas` fail the same way on
+    # weather and fuel.
+    #
+    # Deleting the phrases would lose "i keep having fits" and "i have bad
+    # wind", which are exactly how people report those two things. So instead
+    # each one must appear in a frame that marks it as a complaint: directly
+    # after a having-verb, a quantity adjective, or (for `fit`/`fits` only) a
+    # determiner, since "a fit" and "my fits" are noun uses while "the dress
+    # fits" is not.
+    #
+    # This is a POSITIVE requirement, not a blocklist of non-medical contexts.
+    # That direction matters: a blocklist has to anticipate every innocent
+    # sentence in English, which is the mistake that sank the loose matcher's
+    # sixth guard. A frame list only has to describe how a complaint is
+    # phrased, and a miss costs recall rather than inventing a symptom.
+    #
+    # `numb` was considered and deliberately left alone - it has no common
+    # non-medical sense. `spots` was considered and left alone too: licensing
+    # it needs "spots ON <body part>", which is a different shape, and it is
+    # recorded as a known limitation rather than half-fixed here.
+    def _licensed(self, phrase, norm, start):
+        """
+        True unless `phrase` is an ambiguous single word in an unlicensed
+        frame. Everything not in LICENSED passes straight through, so this
+        touches 4 phrases of 1,712 and nothing else.
+        """
+        allowed = LICENSED.get(phrase)
+        if allowed is None:
+            return True
+        before = norm[:start].split()
+        # Only the immediately preceding word counts. Widening the window to
+        # two words in general re-admits "my RING barely fits", which is the
+        # sentence this exists for.
+        if not before:
+            return False
+        if before[-1] in allowed:
+            return True
+        # One exception, worth exactly one extra word: a quantity phrase ends
+        # in "of". Gold Set 1 has "i have stomach cramps and A LOT OF GAS but
+        # no diarrhoea", a real complaint the one-word window refused. The
+        # head noun is checked too, so "the SMELL of gas" stays refused.
+        if (before[-1] == "of" and len(before) >= 2
+                and before[-2] in {"lot", "lots", "loads", "plenty", "bit"}):
+            return True
+        return False
+
     def extract(self, text, age=None):
         norm, idx_map = normalize_with_map(text)
 
@@ -404,6 +482,8 @@ class Layer1:
                     continue
                 column, how = self.phrases[phrase]
                 if column not in self.vocab:
+                    continue
+                if not self._licensed(phrase, norm, m.start()):
                     continue
                 take(m.start(), m.end())
                 add("column", column, (m.start(), m.end()), m.group(),
@@ -830,6 +910,12 @@ class Layer1:
             ],
             "unmatched": unmatched,
             "unmatched_spans": unmatched_spans,
+            # (column, (start, end)) for every symptom we asserted, in
+            # NORMALISED coordinates - the same span `modifiers` attaches on.
+            # Layer 3 reads this to notice when a column it wants to add covers
+            # text a different column already claimed: "my knee, not my elbow,
+            # is sore" must not end up asserting both. See layer3_llm.extend.
+            "found_spans": [[c, [s[0], s[1]]] for c, s in found_spans],
             "coverage": round(covered / len(norm), 3) if norm else 0.0,
             "n_found": len(symptoms) + len(negated) + len(clarify) + len(excluded),
             "n_actionable": len(symptoms) + len(clarify) + len(confirm),

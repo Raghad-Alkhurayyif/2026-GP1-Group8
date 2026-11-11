@@ -83,6 +83,21 @@ def backend():
     return _BACKEND
 
 
+def _transposed(a, b):
+    """
+    True when `a` becomes `b` by swapping one pair of adjacent letters.
+
+    "headcahe" -> "headache". Distinguished from a substitution because a
+    transposition uses the same letters, so reversing the swap is forced
+    rather than guessed - there is nothing to get wrong.
+    """
+    if len(a) != len(b) or a == b:
+        return False
+    d = [i for i, (x, y) in enumerate(zip(a, b)) if x != y]
+    return (len(d) == 2 and d[1] == d[0] + 1
+            and a[d[0]] == b[d[1]] and a[d[1]] == b[d[0]])
+
+
 def edit_budget(n):
     """One edit, except for long words where two is still safe."""
     if n < MIN_LEN:
@@ -179,6 +194,32 @@ class SpellCorrector:
                     stem = base[:-1]
                     if sum(1 for ch in stem if ch in "aeiou") <= 1:
                         return True      # "stop" -> "stopping", correct
+
+        # SILENT-E RESTORATION, October 2026. The single biggest cause of the
+        # speller damaging correct text.
+        #
+        # `data/english_words.txt.gz` is essentially a list of BASE forms:
+        # `give` is in it, `giving` is not; `squeeze` is, `squeezed` is not.
+        # English drops the final e before -ing/-ed/-es, so stripping the
+        # suffix leaves `giv`, `squeez`, `settl`, `leav`, `sneez`, `hiv` -
+        # none of which are words, so every one of these ordinary inflections
+        # was declared a misspelling and then "corrected" to whatever lexicon
+        # word sat one edit away. That is how
+        #     "my cheeks feel like theyre GIVING off heat"
+        # became "... HIVING off heat" and reported a fabricated `skin rash`.
+        #
+        # Putting the e back fixes the whole class in four lines.
+        for suf in ("ing", "ed", "es", "er", "est"):
+            if w.endswith(suf) and len(w) - len(suf) >= 2:
+                if (w[: -len(suf)] + "e") in self.english:
+                    return True
+
+        # y -> ies, the other regular ending the base-form list cannot cover:
+        # `grocery` is in the list, `groceries` is not.
+        if w.endswith("ies") and len(w) >= 5:
+            if (w[:-3] + "y") in self.english:
+                return True
+
         return False
 
     def correct(self, word):
@@ -203,6 +244,73 @@ class SpellCorrector:
             return None
         if ties > 1:
             return None                      # ambiguous - do not guess
+
+        # TWO GUARDS, October 2026. `is_english` is now morphology-aware, but
+        # the word list still has genuine gaps (`box`, `refuse`, `disappear`
+        # are simply absent), so a correct word can still arrive here. These
+        # two refuse the two shapes of damage that gap produces.
+        #
+        # GUARD 1 - an inflection is not a typo. `refuse` is missing from the
+        # list, so it reached here and was "corrected" to the lexicon word
+        # `refuses`; likewise `settled` -> `settle` and `sneezed` -> `sneeze`.
+        # Turning a word into another tense or number of ITSELF never fixes a
+        # spelling mistake, whichever direction it goes.
+        for suf in ("s", "es", "d", "ed", "ing", "ies"):
+            # A doubled final letter is a typo, not an inflection:
+            # "shortnes" -> "shortness" adds an s to a word already ending in
+            # s, which is someone missing a keystroke, whereas "refuse" ->
+            # "refuses" adds an s to a word ending in e, which is a plural.
+            # Without this the guard refused `shortnes of breth` and cost a
+            # regression sentence.
+            doubling = len(suf) == 1 and w[-1:] == suf
+            # The same holds the other way round: "hurtss" -> "hurts" removes
+            # a doubled final letter, which is a typo, not an inflection.
+            undoubling = len(suf) == 1 and best[-1:] == suf
+            if ((best == w + suf and not doubling)
+                    or (w == best + suf and not undoubling)):
+                return None
+            # ... and the same across a restored silent e, so `giving`/`give`
+            # and `bones`/`bone` are both caught. Each side applies only if an
+            # `e` was actually there to drop: `rstrip` on a word that does not
+            # end in e returns it unchanged, which made this clause a second
+            # copy of the one above without the doubling exemption, and that
+            # is what refused `shortnes` -> `shortness`.
+            w_e, b_e = w.rstrip("e"), best.rstrip("e")
+            if w_e != w and best == w_e + suf:
+                return None
+            if b_e != best and w == b_e + suf:
+                return None
+
+        # GUARD 2 - never change the first letter. `giving` -> `hiving` is the
+        # worst correction the speller made: it invented a symptom from a word
+        # the user spelled perfectly. People mistype middles and endings; a
+        # wrong first letter is rare enough that accepting the miss is far
+        # cheaper than accepting that class of false positive. Every
+        # correction the speller gets RIGHT keeps its first letter -
+        # coughin->coughing, puffyy->puffy, frezing->freezing, shakin->shaking,
+        # throt->throat - so this costs nothing measurable.
+        if best[:1] != w[:1]:
+            return None
+
+        # GUARD 3 - no same-length single substitutions. This closes the last
+        # gap case, `boxes` -> `bones` (`box` is absent from the word list).
+        #
+        # Every correction the speller gets right in this corpus changes the
+        # word's LENGTH, because the typos people actually make when typing
+        # about symptoms are dropped letters ("coughin", "shakin", "frezing",
+        # "throt") and doubled ones ("puffyy"). A same-length one-letter swap
+        # is a different animal: it turns one real word into another real word
+        # and so is indistinguishable from a word the dictionary is merely
+        # missing. Measured cost of refusing them across 903 regression
+        # sentences and both gold sets: nothing, ONCE TRANSPOSITIONS ARE
+        # EXEMPTED. The first version of this guard refused them too and cost
+        # two regression sentences - "i have a bad HEADCAHE" and one other,
+        # both adjacent-letter swaps, which are among the commonest real typos
+        # and are unambiguous: swapping two letters back yields a word, so
+        # there is no guessing involved. Only a true substitution is refused.
+        if len(best) == len(w) and best_d == 1 and not _transposed(w, best):
+            return None
+
         return best
 
     def correct_text(self, text):

@@ -85,6 +85,63 @@ NEGATORS_IN_TEXT = {"no", "not", "cannot", "never", "without", "nothing"}
 
 SCORE_LOOSE = 0.78
 
+# A SEVENTH GUARD, October 2026 - the one the sixth was reaching for.
+#
+# The sixth guard asked whether the words BETWEEN a phrase's words were
+# filler. That is unanswerable without a frequency list, which is why it was
+# reverted. This guard asks a different and much easier question: are the
+# phrase's OWN words distinctive enough to be worth matching loosely at all?
+#
+# `seeing things` matched "can you SEE the last THING i typed" and recorded
+# DELUSIONS OR HALLUCINATIONS for somebody asking whether their message
+# arrived. `feel down` matched "i feel little shocks DOWN my spine", "i feel
+# the swelling going DOWN" and "i feel better lying DOWN" and recorded
+# DEPRESSION three times. All four are the same failure: every content word in
+# the phrase is a generic English word, so the pair carries no clinical signal
+# on its own and the idiom's meaning lives entirely in the adjacency that
+# loose matching is designed to ignore.
+#
+# Contrast the four cases this matcher exists for - `heavy periods`,
+# `spotting while pregnant`, `tugging at her ear`, `hearing voices`. Each has
+# at least one word a person would only use about a body or a symptom:
+# period, pregnant, ear, voice. That asymmetry is the whole rule.
+#
+# So: refuse to loose-match a phrase when EVERY one of its content words is
+# generic. Applied mechanically across the lexicon at index-build time, never
+# per sentence - the criterion is a property of the phrase, so it cannot be
+# fitted to a particular false positive.
+#
+# Exact matching is untouched. "i am seeing things" and "i feel down" still
+# match, because they match exactly. Only the fuzzy-across-a-gap path closes.
+GENERIC_WORDS = {
+    # Generic perception and cognition verbs.
+    "see", "saw", "look", "watch", "hear", "listen", "feel", "think", "know",
+    "notice", "seem", "sound", "tell", "say", "ask", "wonder",
+    # Generic action verbs.
+    "go", "goe", "come", "get", "got", "make", "take", "put", "give", "keep",
+    "let", "turn", "do", "doe", "did", "use", "want", "need", "try", "start",
+    "stop", "happen", "bother", "last", "stay",
+    # Generic nouns and adverbs that carry no clinical content.
+    "thing", "stuff", "bit", "time", "day", "way", "kind", "sort", "lot",
+    "down", "up", "out", "off", "over", "back", "away", "around", "again",
+    "much", "many", "more", "most", "less", "well", "better", "worse",
+    "good", "bad", "fine", "okay", "ok", "normal", "weird", "funn", "odd",
+    "strange", "right", "left", "little", "big", "small", "long", "short",
+    "new", "old", "same", "other", "next", "first", "today", "now",
+}
+
+
+def loose_unsafe(phrase):
+    """
+    True when a phrase must not be matched loosely - see GENERIC_WORDS above.
+
+    A phrase qualifies only if EVERY content word is generic. One distinctive
+    word is enough to keep it, which is why `hearing voices` survives and
+    `hearing things` does not.
+    """
+    cw = [stem(w) for w in content_words(phrase)]
+    return bool(cw) and all(w in GENERIC_WORDS for w in cw)
+
 
 def stem(word):
     """Strip one common suffix, if what is left is still a real-looking word."""
@@ -103,9 +160,16 @@ class LooseMatcher:
     def __init__(self, phrases):
         """`phrases` maps a normalised phrase -> (column, kind)."""
         self.index = []           # (stem set, phrase, column, n content words)
+        self.refused = []         # phrases held back by the seventh guard
         for p, (col, _kind) in phrases.items():
             cw = content_words(p)
             if len(cw) < 2:
+                continue
+            # Seventh guard. Kept as a list rather than dropped silently, so
+            # `python3 -c "...LooseMatcher(...).refused"` shows exactly which
+            # phrases lost their loose path and the choice stays auditable.
+            if loose_unsafe(p):
+                self.refused.append((p, col))
                 continue
             stems = frozenset(stem(w) for w in cw)
             if len(stems) < 2:    # e.g. "aches and aching" collapses to one

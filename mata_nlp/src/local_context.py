@@ -64,12 +64,27 @@ BIDIRECTIONAL = {
     "a few days ago", "a week ago", "a month ago", "years ago", "months ago",
     "days ago", "over the weekend", "a couple of days ago", "earlier",
     "last winter", "last summer", "last spring", "last autumn", "last fall",
+    # Day words, October 2026. A day word is placed before the symptom at
+    # least as often as after it - "YESTERDAY everything spun" against
+    # "everything spun YESTERDAY" - so backward-only scope missed half of
+    # them. "since yesterday" and "for a day" remain ONGOING via
+    # ONGOING_PREFIXES below, exactly as "last night" already does.
+    "yesterday", "last nite",
+    "on monday", "on tuesday", "on wednesday", "on thursday", "on friday",
+    "on saturday", "on sunday",
 }
 
 # Where any scope stops, on top of the TERMINATE rules in the table.
 # A comma breaks a modifier scope too. "a swollen ankle, also I barely slept
 # LAST NIGHT" ran the time expression backwards over the ankle and marked it
 # historical - the "last night" was about the sleeping, not the ankle.
+def _has_present_marker(window):
+    """True when `window` states the symptom is current. See DAY_WORDS."""
+    w = (window or "").lower()
+    return any(re.search(rf"(?<!\w){re.escape(p)}(?!\w)", w)
+               for p in PRESENT_MARKERS)
+
+
 SENTENCE_BREAKS = {".", ";", ","}
 HARD_TERMINATORS = [
     # Plain conjunctions terminate a scope, which is ConText's own behaviour
@@ -115,7 +130,38 @@ CROSSES_CONTRAST = {
     "it has healed", "its healed",
 }
 
-ONGOING_PREFIXES = ("since", "for the last", "for the past", "for", "over")
+# Day words are WEAKER evidence than every other HISTORICAL trigger, and need
+# their own veto. "two weeks ago" can only be about a symptom; "yesterday" is
+# just as often about something the person did, and a scope runs to the next
+# comma - so in a sentence with no commas it reaches the whole way across:
+#
+#   "carried boxes YESTERDAY shoulder hurts NOW and cant lift arm high"
+#   "...run to the bathroom EVERY MORNING ... almost missed an exam YESTERDAY"
+#
+# In both, the day word belongs to the other clause (carrying boxes, missing an
+# exam) and the symptom says plainly that it is current. Gold Set 1 lost a
+# finding to the second one and Gold Set 2 to the first.
+#
+# So: a day word is ignored when its scope contains an explicit present marker.
+# An unambiguous statement of "now" outranks an ambiguous time reference. Note
+# "today" is deliberately NOT a present marker - "then fine today" is a
+# RESOLUTION, and treating it as present would undo the fix it belongs to.
+DAY_WORDS = {"yesterday", "last nite", "on monday", "on tuesday",
+             "on wednesday", "on thursday", "on friday", "on saturday",
+             "on sunday"}
+PRESENT_MARKERS = ("now", "still", "currently", "has been", "have been",
+                   "getting", "keeps", "every morning", "every day",
+                   "every night", "every time")
+
+ONGOING_PREFIXES = ("since", "for the last", "for the past", "for", "over",
+                    # "from", October 2026. Adding the day words above turned
+                    # "my neck is stiff FROM YESTERDAY but i can move it" into
+                    # history. "from <time>" means it started then and has not
+                    # stopped, which is what "since <time>" means, and the two
+                    # must be treated alike. Gold Set 1 caught this; the
+                    # regression suite did not, because no sentence in it uses
+                    # "from" that way.
+                    "from")
 
 
 # A FAMILY scope ends the moment the person turns back to themselves.
@@ -325,6 +371,7 @@ class LocalContext:
             for m in pattern.finditer(text):
                 if cat == HISTORICAL and self._is_ongoing(text, m.start()):
                     continue
+                day_word = literal in DAY_WORDS
                 if direction in ("FORWARD", "BIDIRECTIONAL"):
                     if cat in (FAMILY, DEPENDENT):
                         end = self._list_end(text, m.end(), stops)
@@ -343,7 +390,9 @@ class LocalContext:
                         if literal.startswith("my ") and self._is_carer_report(
                                 text, m.end(), end):
                             this = DEPENDENT
-                    out.append((m.end(), end, this))
+                    if not (day_word and _has_present_marker(
+                            text[m.end():end])):
+                        out.append((m.end(), end, this))
                 if direction in ("BACKWARD", "BIDIRECTIONAL"):
                     if literal in CROSSES_CONTRAST:
                         bounds = hard_stops_only
@@ -352,8 +401,10 @@ class LocalContext:
                     else:
                         bounds = stops
                     start = self._prev_break(bounds, m.start())
-                    out.append((0 if start is None else start + 1,
-                                m.start(), cat))
+                    lo = 0 if start is None else start + 1
+                    if not (day_word and _has_present_marker(
+                            text[lo:m.start()])):
+                        out.append((lo, m.start(), cat))
         return out
 
     def assess(self, text, spans):

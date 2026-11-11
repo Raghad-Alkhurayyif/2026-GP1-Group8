@@ -11215,6 +11215,76 @@
    "BACKWARD"
   ],
   [
+   "yesterday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "last nite",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "on monday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "on tuesday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "on wednesday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "on thursday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "on friday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "on saturday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "on sunday",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "then stopped",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "then it stopped",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "no more since then",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "none since then",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
+   "then fine today",
+   "HISTORICAL",
+   "BACKWARD"
+  ],
+  [
    "used to",
    "HISTORICAL",
    "FORWARD"

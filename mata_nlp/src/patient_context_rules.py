@@ -99,6 +99,44 @@ PATIENT_RULES = [
     ("but it stopped", "HISTORICAL", "BACKWARD"),
     ("it has healed", "HISTORICAL", "BACKWARD"),
     ("its healed", "HISTORICAL", "BACKWARD"),
+    # From Gold Set 2's dev half, October 2026. Eight findings recorded a
+    # resolved symptom as CURRENT, which is the wrong direction for urgency.
+    #
+    # The cause was not verb tense, as first assumed, but gaps in this list.
+    # Every "last <period>" was covered and the commonest past-time word in
+    # English was not:
+    #
+    #   "stood up fast YESTERDAY everything spun for a sec then fine today"
+    #   "nose bled a little ON SATURDAY stopped quick no more since then"
+    #   "had coffee and felt tiny flutter in chest for few secs THEN STOPPED"
+    #   "felt freezing then boiling LAST NITE no clue why"
+    #
+    # `i had a headache yesterday but it is gone now` was read correctly, which
+    # concealed the gap - it passed on "but it is gone now", not on "yesterday".
+    #
+    # These are BIDIRECTIONAL in local_context, because unlike "two weeks ago"
+    # a day word is as often placed before the symptom as after it ("yesterday
+    # everything spun"). "since yesterday" and "for a day" stay ONGOING through
+    # the existing ONGOING_PREFIXES check, the same protection "last night"
+    # already relies on.
+    ("yesterday", "HISTORICAL", "BACKWARD"),
+    # Informal spelling. The lexicon's own spell corrector does not touch
+    # context triggers, so the variant needs its own rule.
+    ("last nite", "HISTORICAL", "BACKWARD"),
+    ("on monday", "HISTORICAL", "BACKWARD"),
+    ("on tuesday", "HISTORICAL", "BACKWARD"),
+    ("on wednesday", "HISTORICAL", "BACKWARD"),
+    ("on thursday", "HISTORICAL", "BACKWARD"),
+    ("on friday", "HISTORICAL", "BACKWARD"),
+    ("on saturday", "HISTORICAL", "BACKWARD"),
+    ("on sunday", "HISTORICAL", "BACKWARD"),
+    # Resolution phrasings the list did not carry. "and it stopped" and "but it
+    # stopped" were there; the commonest spoken form, "then stopped", was not.
+    ("then stopped", "HISTORICAL", "BACKWARD"),
+    ("then it stopped", "HISTORICAL", "BACKWARD"),
+    ("no more since then", "HISTORICAL", "BACKWARD"),
+    ("none since then", "HISTORICAL", "BACKWARD"),
+    ("then fine today", "HISTORICAL", "BACKWARD"),
     # Bare "used to", generalising the three templates above. "my hand used to
     # go numb" is not "i used to have" or "i used to get", and the symptom is
     # as over as in either.

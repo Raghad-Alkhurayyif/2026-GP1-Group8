@@ -77,6 +77,11 @@ MODEL_NAME = "gemini-3.5-flash"
 THINKING_LEVEL = "LOW"
 TIMEOUT_SECONDS = 10
 MAX_UNMATCHED_CHARS = 2000
+# Fixed so a reported number can be reproduced. See `generate` below for what
+# went wrong without it. Pinning these does NOT make the API deterministic -
+# server-side batching and model revisions still move answers - so a figure
+# measured here is still checked by running it more than once.
+LLM_SEED = 1448
 
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -283,16 +288,29 @@ class Layer3:
         )
 
         def generate(system_instruction, text):
+            # TEMPERATURE IS LEFT AT THE MODEL'S DEFAULT. An earlier version
+            # set it to 0 so that repeated runs would agree. Google advises
+            # keeping Gemini 3 models at their default temperature, and the
+            # model was chosen (November 2026) by measurements taken at the
+            # default, so changing it would ship a configuration nobody
+            # measured. Run-to-run agreement is measured instead and reported.
+            cfg = {
+                "system_instruction": system_instruction,
+                "response_mime_type": "application/json",
+                "response_schema": RESPONSE_SCHEMA,
+                "thinking_config": types.ThinkingConfig(
+                    thinking_level=THINKING_LEVEL),
+            }
+            # `seed` is not in every version of google-genai, and an unknown
+            # field makes the config constructor raise. Pass it only where
+            # this installation declares it, so pinning determinism can never
+            # be the thing that breaks the call.
+            if "seed" in getattr(types.GenerateContentConfig, "model_fields", {}):
+                cfg["seed"] = LLM_SEED
             r = client.models.generate_content(
                 model=self.model_name,
                 contents=text,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    response_mime_type="application/json",
-                    response_schema=RESPONSE_SCHEMA,
-                    thinking_config=types.ThinkingConfig(
-                        thinking_level=THINKING_LEVEL),
-                ),
+                config=types.GenerateContentConfig(**cfg),
             )
             return r.text or ""
 
@@ -343,6 +361,42 @@ class Layer3:
         norm = result.get("normalized", "")
         for m in parsed["matches"]:
             if m["column"] in found:
+                continue
+            clash = self._span_clash(result, norm, m)
+            # If a question already on the screen offers either column, the
+            # person is being asked about this very text. A second question
+            # would put two near-identical choices in front of them, which is
+            # the same duplicate-screen fault the always-ask fix removed.
+            if clash and any(
+                    clash in (c.get("candidates") or [])
+                    or m["column"] in (c.get("candidates") or [])
+                    for c in result.get("clarify", [])):
+                clash = None
+            if clash:
+                # TWO COLUMNS OVER THE SAME WORDS. "my knee, not my elbow, is
+                # sore" gives Layer 1 `elbow pain`; the model wants to add
+                # `knee pain` for text inside the same span. Before this check
+                # both were kept and both asserted, because no layer may
+                # overrule another - so the component confidently recorded two
+                # contradictory body sites.
+                #
+                # We do not pick a winner. Picking one would be the model
+                # overruling the lexicon or the reverse, and neither is a
+                # judgment either stage has earned. Instead we ask, reusing
+                # the ambiguity mechanism the interface already renders on
+                # screen 3. Asking cannot be worse than asserting both.
+                result.setdefault("clarify", []).append({
+                    "matched_text": m["matched_text"],
+                    "candidates": sorted([clash, m["column"]]),
+                    "question": (f"Which of these is it - "
+                                 f"{self.layer1.display_label(clash)} or "
+                                 f"{self.layer1.display_label(m['column'])}?"),
+                    # Unique per pair so two conflicts in one sentence stay
+                    # separate questions, and so this never collides with a
+                    # real vocabulary family name.
+                    "family": f"conflict:{clash}|{m['column']}",
+                    "kind": "span_conflict",
+                    "layer": "llm"})
                 continue
             status = self._status(norm, m["matched_text"])
             entry = {"column": m["column"], "matched_text": m["matched_text"],
@@ -437,6 +491,37 @@ class Layer3:
         """True for the family's catch-all member: `leg pain`, `arm pain`."""
         fam = self.layer1.vocab.get(column, {}).get("family")
         return bool(fam) and FAMILY_GENERIC.get(fam) == column
+
+    @staticmethod
+    def _span_clash(result, norm, match):
+        """
+        The column already asserted over the same words, or None.
+
+        Layer 1's spans are in NORMALISED coordinates, so the model's matched
+        text is normalised and located in `norm` before comparing - that puts
+        both sides in one coordinate system without needing the index map.
+        A match we cannot locate is left alone rather than guessed at.
+        """
+        spans = result.get("found_spans") or []
+        if not spans or not norm:
+            return None
+        try:
+            from normalize import normalize
+            needle = normalize(match.get("matched_text") or "")
+        except Exception:                                  # noqa: BLE001
+            return None
+        if not needle:
+            return None
+        at = norm.find(needle)
+        if at < 0:
+            return None
+        lo, hi = at, at + len(needle)
+        for col, (s, e) in ((c, tuple(sp)) for c, sp in spans):
+            if col == match["column"]:
+                continue
+            if lo < e and s < hi:          # any overlap at all
+                return col
+        return None
 
     def _always_asks(self, column):
         """
@@ -566,6 +651,34 @@ def self_test():
     r = l3.extend(l1.extract(both))
     print(f"  no duplicate question when Layer 1 already asked: "
           f"{len(r.get('clarify', []))} clarify (must be 1)")
+
+    # Two columns over the same words: ask, never assert both. Before October
+    # 2026 "my elbow is sore" plus a model proposing `knee pain` over the same
+    # span kept both, asserted, because no layer may overrule another.
+    def _conflicts(text, payload):
+        res = Layer3(l1, client=lambda *_: json.dumps(payload)).extend(
+            l1.extract(text))
+        return res, [c for c in res.get("clarify", [])
+                     if c.get("kind") == "span_conflict"]
+
+    res, cl = _conflicts(
+        "my elbow is sore and i feel blargh since tuesday",
+        {"matches": [{"column": "knee pain", "matched_text": "elbow is sore"}],
+         "ambiguous": []})
+    print("\n  a second column over the SAME words is asked about, not asserted:")
+    print(f"      asserted  {[s['column'] for s in res['symptoms']]}"
+          f"   (must be ['elbow pain'] alone)")
+    print(f"      conflict  {[c['candidates'] for c in cl]}"
+          f"   (must offer both columns)")
+
+    res, cl = _conflicts(
+        "my elbow is sore and my head is pounding blargh",
+        {"matches": [{"column": "headache", "matched_text": "head is pounding"}],
+         "ambiguous": []})
+    print("  a column over DIFFERENT words is still asserted, no question:")
+    print(f"      asserted  {sorted(s['column'] for s in res['symptoms'])}"
+          f"   (must be both)")
+    print(f"      conflict  {len(cl)}   (must be 0)")
     return 0
 
 
