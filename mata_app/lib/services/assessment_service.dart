@@ -1,9 +1,16 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AssessmentService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Firestore keeps a write waiting until the server confirms it, so with
+  /// no internet the call would never return. After this long we stop
+  /// waiting and tell the user, with a TimeoutException.
+  static const Duration _timeout = Duration(seconds: 15);
 
   Future<String> createSymptomSubmission({required String description}) async {
     final user = _auth.currentUser;
@@ -35,7 +42,7 @@ class AssessmentService {
       'status': 'processing',
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    }).timeout(_timeout);
 
     return submission.id;
   }
@@ -74,7 +81,8 @@ class AssessmentService {
           'subjectAge': subjectAge,
           'status': 'confirmed',
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        })
+        .timeout(_timeout);
   }
 
   Future<void> failSymptomSubmission({required String submissionId}) async {
@@ -95,7 +103,8 @@ class AssessmentService {
         .update({
           'status': 'failed',
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        })
+        .timeout(_timeout);
   }
 
   List<Map<String, dynamic>> _prepareSymptoms(
@@ -132,7 +141,11 @@ class AssessmentService {
       );
     }
 
-    final snapshot = await _firestore.collection('users').doc(user.uid).get();
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .get()
+        .timeout(_timeout);
 
     final dateOfBirth = snapshot.data()?['dateOfBirth'];
 

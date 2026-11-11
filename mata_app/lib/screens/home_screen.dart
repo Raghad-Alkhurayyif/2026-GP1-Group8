@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/analysis_notice.dart';
@@ -91,6 +93,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
+    } on TimeoutException {
+      // No answer from the database: almost always no internet.
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _notice = AnalysisNotice.offline);
     } catch (_) {
       if (!mounted) {
         return;
@@ -349,9 +358,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       final notice = AnalysisNotice.fromExtraction(result, widget.description);
 
       if (notice != null) {
-        await _assessmentService.failSymptomSubmission(
-          submissionId: widget.submissionId,
-        );
+        // Not awaited: the notice should not wait on the database.
+        _markFailed();
 
         if (!mounted) {
           return;
@@ -562,11 +570,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         );
       }
     } catch (error) {
-      try {
-        await _assessmentService.failSymptomSubmission(
-          submissionId: widget.submissionId,
-        );
-      } catch (_) {}
+      // Not awaited: the error card should not wait on the database.
+      _markFailed();
 
       if (!mounted) {
         return;
@@ -576,6 +581,14 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         _error = AnalysisNotice.fromError(error);
       });
     }
+  }
+
+  /// Records that this submission failed. Errors are ignored: with no
+  /// internet, Firestore keeps the change and sends it once back online.
+  void _markFailed() {
+    _assessmentService
+        .failSymptomSubmission(submissionId: widget.submissionId)
+        .catchError((_) {});
   }
 
   bool _hasFollowUpQuestions(Map<String, dynamic> result) {

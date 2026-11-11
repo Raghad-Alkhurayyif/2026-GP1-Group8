@@ -73,6 +73,13 @@ class AnalysisNotice {
         'is running, then try again.',
   );
 
+  static const offline = AnalysisNotice(
+    title: 'You seem to be offline',
+    message: 'We couldn’t save your description because there is no '
+        'internet connection.',
+    suggestion: 'Check your Wi-Fi or mobile data, then try again.',
+  );
+
   static const failed = AnalysisNotice(
     title: 'Something went wrong',
     message: 'We could not analyze your description this time.',
