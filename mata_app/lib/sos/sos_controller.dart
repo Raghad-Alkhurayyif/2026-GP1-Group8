@@ -86,6 +86,7 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
   LocationStatus? _expectedLocationProblem;
   SosResult? _result;
   SosCancelReason? _cancelReason;
+  LocationResult? _lastLocation;
 
   /// Increases with every activation and every cancel. Async work started
   /// for an older value must stop, so a late answer can never send.
@@ -109,6 +110,11 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
   LocationStatus? get expectedLocationProblem => _expectedLocationProblem;
 
   SosResult? get result => _result;
+
+  /// The location fetched for the latest alert, once sending has it. The
+  /// screen uses it to pick the emergency number for the country the user
+  /// is in. Like the alert itself, it is never stored.
+  LocationResult? get lastLocation => _lastLocation;
   SosCancelReason? get cancelReason => _cancelReason;
 
   /// Whether the user can still stop the alert.
@@ -247,6 +253,7 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
 
     final location = await (_pendingLocation ?? _location.getCurrentLocation());
     _pendingLocation = null;
+    _lastLocation = location;
     // No cancel check here: once the countdown has ended the alert must go
     // out (PBI-22 AC 3), even if the screen is closed meanwhile.
 

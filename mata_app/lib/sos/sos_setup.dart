@@ -3,10 +3,6 @@ import 'location_service.dart';
 import 'sos_controller.dart';
 import 'sos_sender.dart';
 
-/// The number the SOS screens offer to call when the alert cannot reach the
-/// default contact (PBI-21, PBI-24). 997 is the Saudi Red Crescent ambulance.
-const String emergencyServicesNumber = '997';
-
 /// Builds the sender the SOS screen uses.
 ///
 /// The real SMS sender (PBI-20, PBI-21) plugs in here: replace

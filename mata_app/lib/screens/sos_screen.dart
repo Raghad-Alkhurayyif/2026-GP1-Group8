@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/emergency_contact_service.dart';
+import '../sos/emergency_number.dart';
 import '../sos/location_service.dart';
 import '../sos/sos_controller.dart';
 import '../sos/sos_sender.dart';
@@ -35,6 +37,7 @@ class SosScreen extends StatefulWidget {
     this.sender,
     this.locationService,
     this.contactService,
+    this.numberResolver,
     super.key,
   });
 
@@ -42,6 +45,7 @@ class SosScreen extends StatefulWidget {
   final SosSender? sender;
   final LocationService? locationService;
   final EmergencyContactService? contactService;
+  final EmergencyNumberResolver? numberResolver;
 
   @override
   State<SosScreen> createState() => _SosScreenState();
@@ -56,16 +60,46 @@ class _SosScreenState extends State<SosScreen> {
     locationService: _location,
     contactService: widget.contactService,
   );
+  late final EmergencyNumberResolver _numbers =
+      widget.numberResolver ?? EmergencyNumberResolver();
+
+  /// The number the call buttons dial: 112 until the country is known
+  /// (PBI-21, PBI-24).
+  EmergencyNumber _emergency = const EmergencyNumber.unknown();
+
+  /// Set once the alert's own fix has been used. It is the freshest
+  /// position, so nothing found earlier may replace it.
+  bool _usedAlertLocation = false;
+  StreamSubscription<EmergencyNumber>? _numberUpdates;
+
+  String get _emergencyNumber => _emergency.number;
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_onChange);
     _controller.activate();
+    _numberUpdates = _numbers.resolve().listen((found) {
+      if (mounted && !_usedAlertLocation) setState(() => _emergency = found);
+    });
+  }
+
+  void _useAlertLocation() {
+    final location = _controller.lastLocation;
+    if (_usedAlertLocation || location == null || !location.isAvailable) {
+      return;
+    }
+    _usedAlertLocation = true;
+    _numbers
+        .fromPosition(location.latitude!, location.longitude!)
+        .then((found) {
+      if (mounted && found != null) setState(() => _emergency = found);
+    });
   }
 
   @override
   void dispose() {
+    _numberUpdates?.cancel();
     _controller.removeListener(_onChange);
     _controller.dispose();
     super.dispose();
@@ -79,6 +113,7 @@ class _SosScreenState extends State<SosScreen> {
       Navigator.of(context).pop();
       return;
     }
+    _useAlertLocation();
     setState(() {});
   }
 
@@ -86,7 +121,7 @@ class _SosScreenState extends State<SosScreen> {
     bool opened;
     try {
       opened = await launchUrl(
-        Uri(scheme: 'tel', path: emergencyServicesNumber),
+        Uri(scheme: 'tel', path: _emergencyNumber),
       );
     } catch (_) {
       opened = false;
@@ -95,7 +130,7 @@ class _SosScreenState extends State<SosScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Please call $emergencyServicesNumber from your phone.',
+            'Please call $_emergencyNumber from your phone.',
             style: MataText.body(color: MataColors.softWhite),
           ),
         ),
@@ -190,7 +225,7 @@ class _SosScreenState extends State<SosScreen> {
           'emergency services now.',
       actions: [
         MataButton(
-          label: 'Call $emergencyServicesNumber',
+          label: 'Call $_emergencyNumber',
           icon: Icons.call_rounded,
           style: MataButtonStyle.danger,
           height: 56,
@@ -350,7 +385,7 @@ class _SosScreenState extends State<SosScreen> {
               'notified. Please call emergency services directly.',
           actions: [
             MataButton(
-              label: 'Call $emergencyServicesNumber',
+              label: 'Call $_emergencyNumber',
               icon: Icons.call_rounded,
               style: MataButtonStyle.danger,
               height: 56,
@@ -378,7 +413,7 @@ class _SosScreenState extends State<SosScreen> {
               onPressed: _controller.retry,
             ),
             MataButton(
-              label: 'Call $emergencyServicesNumber',
+              label: 'Call $_emergencyNumber',
               icon: Icons.call_rounded,
               style: MataButtonStyle.danger,
               onPressed: _callEmergencyServices,

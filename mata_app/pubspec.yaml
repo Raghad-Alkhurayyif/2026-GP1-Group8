@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   cloud_firestore: ^7.0.0
+  country_coder: ^1.2.0
   firebase_auth: ^7.0.0
   firebase_core: ^5.0.0
   flutter:
