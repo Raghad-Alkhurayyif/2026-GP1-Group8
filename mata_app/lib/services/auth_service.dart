@@ -121,8 +121,15 @@ class AuthService {
     final userSnapshot = await userDocument.get();
     final savedData = userSnapshot.data();
 
-    await _deleteSymptomSubmissions(user.uid);
-    await _deleteEmergencyContacts(user.uid);
+    // Copies are kept so that, if deleting the sign-in account fails, the
+    // user is not left with an account whose saved data has gone.
+    final savedSubmissions =
+        await _readAll(userDocument.collection('symptomSubmissions'));
+    final savedContacts =
+        await _readAll(userDocument.collection('emergencyContacts'));
+
+    await _deleteAll(savedSubmissions);
+    await _deleteAll(savedContacts);
     await userDocument.delete();
 
     try {
@@ -132,62 +139,44 @@ class AuthService {
       if (savedData != null) {
         await userDocument.set(savedData);
       }
+      await _restoreAll(savedSubmissions);
+      await _restoreAll(savedContacts);
 
       rethrow;
     }
   }
 
-  Future<void> _deleteSymptomSubmissions(String userId) async {
-    final collection = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('symptomSubmissions');
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _readAll(
+    CollectionReference<Map<String, dynamic>> collection,
+  ) async {
+    final snapshot = await collection.get();
+    return snapshot.docs;
+  }
 
-    while (true) {
-      final snapshot = await collection.limit(400).get();
+  // Firestore allows at most 500 writes in one batch.
+  static const int _batchSize = 400;
 
-      if (snapshot.docs.isEmpty) {
-        break;
-      }
-
+  Future<void> _deleteAll(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) async {
+    for (var start = 0; start < documents.length; start += _batchSize) {
       final batch = _firestore.batch();
-
-      for (final document in snapshot.docs) {
+      for (final document in documents.skip(start).take(_batchSize)) {
         batch.delete(document.reference);
       }
-
       await batch.commit();
-
-      if (snapshot.docs.length < 400) {
-        break;
-      }
     }
   }
 
-  Future<void> _deleteEmergencyContacts(String userId) async {
-    final collection = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('emergencyContacts');
-
-    while (true) {
-      final snapshot = await collection.limit(400).get();
-
-      if (snapshot.docs.isEmpty) {
-        break;
-      }
-
+  Future<void> _restoreAll(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) async {
+    for (var start = 0; start < documents.length; start += _batchSize) {
       final batch = _firestore.batch();
-
-      for (final document in snapshot.docs) {
-        batch.delete(document.reference);
+      for (final document in documents.skip(start).take(_batchSize)) {
+        batch.set(document.reference, document.data());
       }
-
       await batch.commit();
-
-      if (snapshot.docs.length < 400) {
-        break;
-      }
     }
   }
 }
