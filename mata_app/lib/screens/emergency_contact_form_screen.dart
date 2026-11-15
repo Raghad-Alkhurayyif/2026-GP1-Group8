@@ -1,5 +1,6 @@
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:phone_numbers_parser/metadata.dart';
 import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
 import '../models/emergency_contact.dart';
@@ -23,8 +24,7 @@ class EmergencyContactFormScreen extends StatefulWidget {
   final EmergencyContactService service;
   final EmergencyContact? contact;
 
-  /// Whether a default SOS contact is already chosen. If not, the new
-  /// contact is offered as the default, with the switch already on.
+  /// Whether selecting this contact as the default would replace another.
   final bool hasDefault;
 
   @override
@@ -48,7 +48,7 @@ class _EmergencyContactFormScreenState
         : _savedNumber?.formatNsn(),
   );
 
-  late bool _makeDefault = !widget.hasDefault;
+  bool _makeDefault = false;
   bool _saving = false;
   String? _nameError;
   String? _phoneError;
@@ -221,8 +221,13 @@ class _EmergencyContactFormScreenState
           case ContactErrorType.emptyName:
             _nameError = error.message;
           case ContactErrorType.emptyPhone:
-          case ContactErrorType.invalidPhone:
             _phoneError = error.message;
+          case ContactErrorType.invalidPhone:
+            final example = metadataExamplesByIsoCode[country]?.mobile;
+            _phoneError = example == null || example.isEmpty
+                ? '${error.message} Enter the local number without the country code.'
+                : '${error.message} Example: '
+                    '${PhoneNumber(isoCode: country, nsn: example).formatNsn()}.';
           case ContactErrorType.duplicatePhone:
             _phoneError = 'A contact with this number already exists.';
           case ContactErrorType.notFound:
@@ -301,7 +306,10 @@ class _EmergencyContactFormScreenState
                               decoration: MataFields.light(
                                 hintText: 'Mobile number',
                                 prefixIcon: _buildCountryPrefix(),
-                              ).copyWith(errorText: _phoneError),
+                              ).copyWith(
+                                errorText: _phoneError,
+                                errorMaxLines: 3,
+                              ),
                             ),
                             if (_phoneError == null) ...[
                               const SizedBox(height: 6),
@@ -404,7 +412,7 @@ class _DefaultSwitch extends StatelessWidget {
                   replacesDefault
                       ? 'Turn on to alert this person instead of your '
                           'current default.'
-                      : 'SOS will alert this person.',
+                      : 'Turn on to use this person as your default.',
                   style: MataText.body(
                     color: MataColors.faint,
                     fontSize: 12,
