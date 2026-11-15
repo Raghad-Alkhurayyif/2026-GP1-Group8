@@ -256,12 +256,12 @@ class _EmergencyContactFormScreenState
           const StrokeBackground(),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 10, 28, 24),
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const MataCornerLogo(),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 1),
                   MataBackButton(onTap: () => Navigator.pop(context)),
                   const SizedBox(height: 14),
                   Text(

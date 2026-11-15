@@ -414,7 +414,7 @@ class MataCornerLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Transform.translate(
-      offset: const Offset(-28, -17),
+      offset: const Offset(-28, -8),
       // A copy pre-scaled to 4x the size it is shown at, so every screen
       // does not decode and shrink the 6432 px original. The offset reaches
       // into the screen margin: a parent that clips (a Stack does by

@@ -156,14 +156,14 @@ class AccountScreen extends StatelessWidget {
           const StrokeBackground(),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 10, 28, 12),
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 12),
               child: Column(
                 children: [
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: MataCornerLogo(),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
