@@ -197,8 +197,8 @@ class _SosScreenState extends State<SosScreen> {
         return _Message(
           icon: Icons.sms_outlined,
           tone: _Tone.calm,
-          title: 'Preparing your alert',
-          body: 'Checking SMS permission and the default SMS SIM before the countdown.',
+          title: 'Getting your alert ready',
+          body: 'Checking that your phone can send a text message.',
           actions: [
             _TextAction(label: 'Cancel SOS', onTap: _controller.cancel),
           ],
@@ -299,13 +299,10 @@ class _SosScreenState extends State<SosScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        if (isTestSender(_sender))
-          const Text(
-            'Test mode: no SMS will be sent.',
-            style: TextStyle(color: Colors.white),
-          ),
         Text(
-          'Your alert will be sent when the countdown ends.',
+          isTestSender(_sender)
+              ? 'Test mode: no text message will be sent.'
+              : 'Your alert will be sent when the countdown ends.',
           textAlign: TextAlign.center,
           style: MataText.body(
             color: MataColors.softWhite.withValues(alpha: 0.7),
@@ -376,15 +373,15 @@ class _SosScreenState extends State<SosScreen> {
           tone: _Tone.success,
           title: 'Alert sent',
           body: testMode
-              ? 'Test alert completed for $_contactName. No SMS was sent.'
-              : 'Android reported sending your alert to $_contactName. '
-                    'Delivery and receipt are not confirmed.',
+              ? 'Test mode: nothing was sent to $_contactName.'
+              : 'A text message asking for help was sent to $_contactName.',
           note: result!.locationIncluded
               ? 'Your location was included.'
               : 'Your location could not be included.',
           footnote: testMode
-              ? 'Test mode: no text message was actually sent.'
-              : null,
+              ? null
+              : 'Your phone confirmed the message was sent, but not '
+                    'that it was received.',
           actions: [
             MataButton(
               label: 'Done',
@@ -401,12 +398,14 @@ class _SosScreenState extends State<SosScreen> {
           icon: Icons.warning_amber_rounded,
           tone: _Tone.warning,
           title: result?.outcome == SosOutcome.partial
-              ? 'Alert partly sent'
-              : 'Send result unknown',
+              ? 'Alert may be incomplete'
+              : 'We couldn’t confirm your alert',
           body: result?.outcome == SosOutcome.partial
-              ? 'Some message parts were sent and others failed. Delivery is not confirmed.'
-              : 'Some or all of your alert may have been sent. Delivery is not confirmed.',
-          note: 'Do not resend automatically. Check with your contact or call emergency services.',
+              ? 'Only part of the message to $_contactName went out.'
+              : 'The message to $_contactName may or may not have gone out.',
+          note:
+              'To be sure help is coming, call $_contactName or '
+              'emergency services.',
           actions: [
             MataButton(
               label: 'Call $_emergencyNumber',
@@ -421,10 +420,10 @@ class _SosScreenState extends State<SosScreen> {
         return _Message(
           icon: Icons.wifi_off_rounded,
           tone: _Tone.warning,
-          title: 'No connection',
+          title: 'No mobile signal',
           body:
-              'Android reported a cellular service failure. Delivery is not confirmed. '
-              'Please call emergency services directly.',
+              'Your phone has no signal, so the message to $_contactName '
+              'could not be sent. Please call emergency services.',
           actions: [
             MataButton(
               label: 'Call $_emergencyNumber',
@@ -469,20 +468,30 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   String _failureMessage(String? reason) => switch (reason) {
-    'permission_denied' => 'SMS permission is required. Allow SMS in Android app settings, then try again. Nothing was dispatched.',
+    'permission_denied' =>
+      'Ma’ta needs permission to send text messages. Allow it in your '
+          'phone’s settings, then try again. Nothing was sent.',
     'unsupported_device' =>
-      'Automatic SMS requires a supported Android phone with a SIM.',
-    'no_default_sim' => 'Choose a default SMS SIM in Android settings. On dual-SIM phones, select the intended SIM explicitly.',
-    'sim_not_ready' || 'no_sim' => 'Your SMS SIM is unavailable or locked. Enable or unlock it in Android settings.',
-    'sim_changed' => 'The default SMS SIM changed during the countdown. Nothing was dispatched. Try again to prepare the selected SIM.',
-    'invalid_contact' || 'invalid_arguments' => 'The saved contact phone number is invalid. Update it in Emergency Contacts.',
-    'contact_unavailable' => 'Your default contact could not be loaded. Check your connection and sign-in, then try again.',
-    'busy' =>
-      'Another SMS attempt is in progress. No additional alert was dispatched.',
-    'storage_error' =>
-      'Duplicate-send protection could not be saved. Nothing was dispatched.',
-    'preparation_failed' || 'not_prepared' => 'SMS could not be prepared. Nothing was dispatched. Please try again or call emergency services.',
-    _ => 'Android reported a send failure. Delivery is not confirmed. Please call emergency services.',
+      'This phone cannot send text messages, so nothing was sent.',
+    'no_default_sim' =>
+      'No SIM is chosen for text messages. Choose one in your phone’s '
+          'settings, then try again. Nothing was sent.',
+    'sim_not_ready' || 'no_sim' =>
+      'Your SIM is missing, locked or not ready, so nothing was sent.',
+    'sim_changed' =>
+      'The SIM for text messages changed during the countdown, so nothing '
+          'was sent. Please try again.',
+    'invalid_contact' || 'invalid_arguments' =>
+      '$_contactName’s saved number is not valid, so nothing was sent. '
+          'Update it in Emergency Contacts.',
+    'contact_unavailable' =>
+      'Your default contact could not be loaded. Check your connection, '
+          'then try again. Nothing was sent.',
+    'busy' => 'An alert is already being sent, so this one was not sent again.',
+    'storage_error' || 'preparation_failed' || 'not_prepared' =>
+      'Your phone could not get the message ready, so nothing was sent. '
+          'Please try again.',
+    _ => 'The message to $_contactName could not be sent.',
   };
 
   Widget _interrupted() {
