@@ -2,12 +2,15 @@ import '../services/emergency_contact_service.dart';
 import 'location_service.dart';
 import 'sos_controller.dart';
 import 'sos_sender.dart';
+import 'android_sms_sender.dart';
 
 /// Builds the sender the SOS screen uses.
 ///
-/// The real SMS sender (PBI-20, PBI-21) plugs in here: replace
-/// [StubSosSender] with it. Nothing else in the screens needs to change.
-SosSender createSosSender() => StubSosSender();
+/// Real Android SMS is the default. Enable simulation explicitly with
+/// --dart-define=SOS_TEST_MODE=true (including on emulators).
+SosSender createSosSender() => const bool.fromEnvironment('SOS_TEST_MODE')
+    ? StubSosSender()
+    : AndroidSmsSender();
 
 /// Whether [sender] is the stand-in that sends nothing. The result screen
 /// says so, so that a test run is never mistaken for a real alert.
@@ -25,7 +28,6 @@ SosController createSosController({
   return SosController(
     sender: sender ?? createSosSender(),
     locationService: locationService ?? LocationService(),
-    loadDefaultContactName: () async =>
-        (await contacts.getDefaultContact())?.name,
+    loadDefaultContact: contacts.getDefaultContact,
   );
 }

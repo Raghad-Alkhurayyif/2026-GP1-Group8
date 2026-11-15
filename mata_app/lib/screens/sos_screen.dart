@@ -90,9 +90,9 @@ class _SosScreenState extends State<SosScreen> {
       return;
     }
     _usedAlertLocation = true;
-    _numbers
-        .fromPosition(location.latitude!, location.longitude!)
-        .then((found) {
+    _numbers.fromPosition(location.latitude!, location.longitude!).then((
+      found,
+    ) {
       if (mounted && found != null) setState(() => _emergency = found);
     });
   }
@@ -120,9 +120,7 @@ class _SosScreenState extends State<SosScreen> {
   Future<void> _callEmergencyServices() async {
     bool opened;
     try {
-      opened = await launchUrl(
-        Uri(scheme: 'tel', path: _emergencyNumber),
-      );
+      opened = await launchUrl(Uri(scheme: 'tel', path: _emergencyNumber));
     } catch (_) {
       opened = false;
     }
@@ -184,17 +182,27 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   String _viewKey(SosPhase phase) => switch (phase) {
-        SosPhase.idle || SosPhase.checking => 'checking',
-        SosPhase.explainLocation || SosPhase.requestingPermission => 'explain',
-        SosPhase.finished => 'finished-${_controller.result?.outcome.name}',
-        _ => phase.name,
-      };
+    SosPhase.idle || SosPhase.checking => 'checking',
+    SosPhase.explainLocation || SosPhase.requestingPermission => 'explain',
+    SosPhase.finished => 'finished-${_controller.result?.outcome.name}',
+    _ => phase.name,
+  };
 
   Widget _buildPhase(SosPhase phase) {
     switch (phase) {
       case SosPhase.idle:
       case SosPhase.checking:
         return const _Preparing();
+      case SosPhase.preparingSms:
+        return _Message(
+          icon: Icons.sms_outlined,
+          tone: _Tone.calm,
+          title: 'Preparing your alert',
+          body: 'Checking SMS permission and the default SMS SIM before the countdown.',
+          actions: [
+            _TextAction(label: 'Cancel SOS', onTap: _controller.cancel),
+          ],
+        );
       case SosPhase.noDefaultContact:
         return _noDefaultContact();
       case SosPhase.explainLocation:
@@ -221,7 +229,8 @@ class _SosScreenState extends State<SosScreen> {
       icon: Icons.person_off_outlined,
       tone: _Tone.warning,
       title: 'No default SOS contact',
-      body: 'Nothing was sent. Choose the contact SOS should alert, or call '
+      body:
+          'Nothing was sent. Choose the contact SOS should alert, or call '
           'emergency services now.',
       actions: [
         MataButton(
@@ -246,10 +255,12 @@ class _SosScreenState extends State<SosScreen> {
       icon: Icons.location_on_outlined,
       tone: _Tone.calm,
       title: 'Share your location?',
-      body: 'Ma’ta can add your current location to the alert so '
+      body:
+          'Ma’ta can add your current location to the alert so '
           '$_contactName can find you. It is used only for this alert '
           'and is never stored.',
-      note: 'Your phone will ask for permission next. SOS still works if you '
+      note:
+          'Your phone will ask for permission next. SOS still works if you '
           'decline.',
       actions: [
         MataButton(
@@ -288,6 +299,11 @@ class _SosScreenState extends State<SosScreen> {
           ),
         ),
         const SizedBox(height: 6),
+        if (isTestSender(_sender))
+          const Text(
+            'Test mode: no SMS will be sent.',
+            style: TextStyle(color: Colors.white),
+          ),
         Text(
           'Your alert will be sent when the countdown ends.',
           textAlign: TextAlign.center,
@@ -359,13 +375,16 @@ class _SosScreenState extends State<SosScreen> {
           icon: Icons.check_rounded,
           tone: _Tone.success,
           title: 'Alert sent',
-          body: '$_contactName has been sent a text message saying you need '
-              'help.',
+          body: testMode
+              ? 'Test alert completed for $_contactName. No SMS was sent.'
+              : 'Android reported sending your alert to $_contactName. '
+                    'Delivery and receipt are not confirmed.',
           note: result!.locationIncluded
               ? 'Your location was included.'
               : 'Your location could not be included.',
-          footnote:
-              testMode ? 'Test mode: no text message was actually sent.' : null,
+          footnote: testMode
+              ? 'Test mode: no text message was actually sent.'
+              : null,
           actions: [
             MataButton(
               label: 'Done',
@@ -376,13 +395,36 @@ class _SosScreenState extends State<SosScreen> {
         );
       case SosOutcome.noDefaultContact:
         return _noDefaultContact();
+      case SosOutcome.partial:
+      case SosOutcome.unknown:
+        return _Message(
+          icon: Icons.warning_amber_rounded,
+          tone: _Tone.warning,
+          title: result?.outcome == SosOutcome.partial
+              ? 'Alert partly sent'
+              : 'Send result unknown',
+          body: result?.outcome == SosOutcome.partial
+              ? 'Some message parts were sent and others failed. Delivery is not confirmed.'
+              : 'Some or all of your alert may have been sent. Delivery is not confirmed.',
+          note: 'Do not resend automatically. Check with your contact or call emergency services.',
+          actions: [
+            MataButton(
+              label: 'Call $_emergencyNumber',
+              icon: Icons.call_rounded,
+              style: MataButtonStyle.danger,
+              onPressed: _callEmergencyServices,
+            ),
+            _TextAction(label: 'Close', onTap: _close),
+          ],
+        );
       case SosOutcome.noNetwork:
         return _Message(
           icon: Icons.wifi_off_rounded,
           tone: _Tone.warning,
           title: 'No connection',
-          body: 'Your alert could not be sent, so $_contactName was not '
-              'notified. Please call emergency services directly.',
+          body:
+              'Android reported a cellular service failure. Delivery is not confirmed. '
+              'Please call emergency services directly.',
           actions: [
             MataButton(
               label: 'Call $_emergencyNumber',
@@ -391,11 +433,12 @@ class _SosScreenState extends State<SosScreen> {
               height: 56,
               onPressed: _callEmergencyServices,
             ),
-            MataButton(
-              label: 'Try Again',
-              style: MataButtonStyle.ghost,
-              onPressed: _controller.retry,
-            ),
+            if (result?.retryAllowed == true)
+              MataButton(
+                label: 'Try Again',
+                style: MataButtonStyle.ghost,
+                onPressed: _controller.retry,
+              ),
             _TextAction(label: 'Close', onTap: _close),
           ],
         );
@@ -405,13 +448,14 @@ class _SosScreenState extends State<SosScreen> {
           icon: Icons.priority_high_rounded,
           tone: _Tone.warning,
           title: 'Alert not sent',
-          body: '$_contactName was not notified.',
+          body: _failureMessage(result?.reason),
           actions: [
-            MataButton(
-              label: 'Try Again',
-              style: MataButtonStyle.cream,
-              onPressed: _controller.retry,
-            ),
+            if (result?.retryAllowed == true)
+              MataButton(
+                label: 'Try Again',
+                style: MataButtonStyle.cream,
+                onPressed: _controller.retry,
+              ),
             MataButton(
               label: 'Call $_emergencyNumber',
               icon: Icons.call_rounded,
@@ -424,12 +468,30 @@ class _SosScreenState extends State<SosScreen> {
     }
   }
 
+  String _failureMessage(String? reason) => switch (reason) {
+    'permission_denied' => 'SMS permission is required. Allow SMS in Android app settings, then try again. Nothing was dispatched.',
+    'unsupported_device' =>
+      'Automatic SMS requires a supported Android phone with a SIM.',
+    'no_default_sim' => 'Choose a default SMS SIM in Android settings. On dual-SIM phones, select the intended SIM explicitly.',
+    'sim_not_ready' || 'no_sim' => 'Your SMS SIM is unavailable or locked. Enable or unlock it in Android settings.',
+    'sim_changed' => 'The default SMS SIM changed during the countdown. Nothing was dispatched. Try again to prepare the selected SIM.',
+    'invalid_contact' || 'invalid_arguments' => 'The saved contact phone number is invalid. Update it in Emergency Contacts.',
+    'contact_unavailable' => 'Your default contact could not be loaded. Check your connection and sign-in, then try again.',
+    'busy' =>
+      'Another SMS attempt is in progress. No additional alert was dispatched.',
+    'storage_error' =>
+      'Duplicate-send protection could not be saved. Nothing was dispatched.',
+    'preparation_failed' || 'not_prepared' => 'SMS could not be prepared. Nothing was dispatched. Please try again or call emergency services.',
+    _ => 'Android reported a send failure. Delivery is not confirmed. Please call emergency services.',
+  };
+
   Widget _interrupted() {
     return _Message(
       icon: Icons.pause_rounded,
       tone: _Tone.calm,
       title: 'SOS was stopped',
-      body: 'You left the app before the countdown ended, so nothing was '
+      body:
+          'You left the app before the countdown ended, so nothing was '
           'sent.',
       actions: [
         MataButton(
@@ -712,9 +774,9 @@ class _LocationNotice extends StatelessWidget {
                 child: Text(
                   servicesOff
                       ? 'Location is off on this phone, so the alert will be '
-                          'sent without your location.'
+                            'sent without your location.'
                       : 'Ma’ta is not allowed to use your location, so the '
-                          'alert will be sent without it.',
+                            'alert will be sent without it.',
                   style: MataText.body(
                     color: MataColors.softWhite.withValues(alpha: 0.85),
                     fontSize: 13,
