@@ -1,4 +1,6 @@
+import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
 import '../models/emergency_contact.dart';
 import '../services/contact_exception.dart';
@@ -34,8 +36,16 @@ class _EmergencyContactFormScreenState
     extends State<EmergencyContactFormScreen> {
   late final TextEditingController _name =
       TextEditingController(text: widget.contact?.name ?? '');
+  static final _countryCodes = {
+    for (final code in IsoCode.values) code.name: code,
+  };
+
+  late final _savedNumber = _readSavedNumber();
+  late Country? _country = Country.tryParse(_savedNumber?.isoCode.name ?? '');
   late final TextEditingController _phone = TextEditingController(
-    text: _localPhone(widget.contact?.phoneNumber ?? ''),
+    text: _country == null
+        ? widget.contact?.phoneNumber ?? ''
+        : _savedNumber?.formatNsn(),
   );
 
   late bool _makeDefault = !widget.hasDefault;
@@ -46,12 +56,83 @@ class _EmergencyContactFormScreenState
 
   bool get _editing => widget.contact != null;
 
-  /// Saved numbers are +9665XXXXXXXX; the field shows the familiar 05...
-  static String _localPhone(String phone) {
-    if (RegExp(r'^\+9665\d{8}$').hasMatch(phone)) {
-      return '0${phone.substring(4)}';
+  PhoneNumber? _readSavedNumber() {
+    final phone = widget.contact?.phoneNumber;
+    if (phone == null || phone.isEmpty) return null;
+
+    try {
+      return PhoneNumber.parse(phone);
+    } on PhoneNumberException {
+      return null;
     }
-    return phone;
+  }
+
+  String _dialCode(Country country) {
+    final isoCode = _countryCodes[country.countryCode]!;
+    return PhoneNumber(isoCode: isoCode, nsn: '').countryCode;
+  }
+
+  void _pickCountry() {
+    FocusScope.of(context).unfocus();
+    showCountryPicker(
+      context: context,
+      showPhoneCode: true,
+      useSafeArea: true,
+      countryFilter: _countryCodes.keys.toList(),
+      countryListTheme: CountryListThemeData(
+        inputDecoration: MataFields.light(hintText: 'Search countries'),
+      ),
+      onSelect: (country) {
+        setState(() {
+          _country = country;
+          _phoneError = null;
+        });
+      },
+    );
+  }
+
+  Widget _buildCountryPrefix() {
+    final country = _country;
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: _saving ? null : _pickCountry,
+            style: TextButton.styleFrom(
+              foregroundColor: MataColors.cocoa,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: const Size(48, 48),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Semantics(
+              label: country == null
+                  ? 'Select country calling code'
+                  : 'Change country calling code, ${country.name}, '
+                      'plus ${_dialCode(country)}',
+              excludeSemantics: true,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (country != null) ...[
+                    Text(country.flagEmoji),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(country == null ? 'Code' : '+${_dialCode(country)}'),
+                  const Icon(Icons.arrow_drop_down, size: 18),
+                ],
+              ),
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 22,
+            color: MataColors.brown.withValues(alpha: 0.18),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -73,6 +154,13 @@ class _EmergencyContactFormScreenState
   }
 
   Future<void> _save() async {
+    if (_saving) return;
+    final country = _countryCodes[_country?.countryCode];
+    if (country == null) {
+      setState(() => _phoneError = 'Select a country first.');
+      return;
+    }
+
     FocusScope.of(context).unfocus();
     setState(() {
       _saving = true;
@@ -87,7 +175,11 @@ class _EmergencyContactFormScreenState
 
       if (contact == null) {
         final id = await withContactTimeout(
-          widget.service.addContact(_name.text, _phone.text),
+          widget.service.addContact(
+            _name.text,
+            _phone.text,
+            country: country,
+          ),
         );
         if (_makeDefault) {
           final name = _name.text.trim();
@@ -113,6 +205,7 @@ class _EmergencyContactFormScreenState
         await withContactTimeout(
           widget.service.updateContact(
             contact.copyWith(name: _name.text, phoneNumber: _phone.text),
+            country: country,
           ),
         );
         message = 'Your changes were saved.';
@@ -128,10 +221,8 @@ class _EmergencyContactFormScreenState
           case ContactErrorType.emptyName:
             _nameError = error.message;
           case ContactErrorType.emptyPhone:
-            _phoneError = error.message;
           case ContactErrorType.invalidPhone:
-            _phoneError = 'Please enter a Saudi mobile number, for example '
-                '05X XXX XXXX or +966 5X XXX XXXX.';
+            _phoneError = error.message;
           case ContactErrorType.duplicatePhone:
             _phoneError = 'A contact with this number already exists.';
           case ContactErrorType.notFound:
@@ -208,14 +299,14 @@ class _EmergencyContactFormScreenState
                                 fontSize: 15,
                               ),
                               decoration: MataFields.light(
-                                hintText: '05X XXX XXXX',
+                                hintText: 'Mobile number',
+                                prefixIcon: _buildCountryPrefix(),
                               ).copyWith(errorText: _phoneError),
                             ),
                             if (_phoneError == null) ...[
                               const SizedBox(height: 6),
                               Text(
-                                'A Saudi mobile number. SOS sends a text '
-                                'message to it.',
+                                'SOS sends a text message to this number.',
                                 style: MataText.body(
                                   color: MataColors.faint,
                                   fontSize: 12,

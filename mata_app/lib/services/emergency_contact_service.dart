@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
 import '../models/emergency_contact.dart';
 import 'contact_exception.dart';
@@ -46,11 +47,12 @@ class EmergencyContactService {
   /// default when the user asks for that.
   Future<String> addContact(
     String name,
-    String phone,
-  ) {
+    String phone, {
+    IsoCode? country,
+  }) {
     return _execute(() async {
       final cleanedName = _validateName(name);
-      final normalizedPhone = _normalizePhone(phone);
+      final normalizedPhone = _normalizePhone(phone, country);
       final contacts = _contactsCollection();
 
       await _ensurePhoneIsUnique(
@@ -69,12 +71,13 @@ class EmergencyContactService {
   }
 
   Future<void> updateContact(
-    EmergencyContact contact,
-  ) {
+    EmergencyContact contact, {
+    IsoCode? country,
+  }) {
     return _execute(() async {
       final cleanedName = _validateName(contact.name);
       final normalizedPhone =
-          _normalizePhone(contact.phoneNumber);
+          _normalizePhone(contact.phoneNumber, country);
       final contacts = _contactsCollection();
       final document = contacts.doc(contact.id);
 
@@ -101,77 +104,65 @@ class EmergencyContactService {
 
   Future<void> deleteContact(String id) {
     return _execute(() async {
-      final user = _requireUser();
       final contacts = _contactsCollection();
+      final userDocument = contacts.parent!;
       final document = contacts.doc(id);
-      final snapshot = await document.get();
 
-      if (!snapshot.exists) {
-        throw const ContactException(
-          ContactErrorType.notFound,
-        );
-      }
+      await _firestore.runTransaction((transaction) async {
+        final userSnapshot = await transaction.get(userDocument);
+        final snapshot = await transaction.get(document);
 
-      final isDefault =
-          snapshot.data()?['isDefault'] as bool? ?? false;
+        if (!snapshot.exists) {
+          throw const ContactException(ContactErrorType.notFound);
+        }
 
-      if (!isDefault) {
-        await document.delete();
-        return;
-      }
-
-      final batch = _firestore.batch();
-
-      batch.delete(document);
-      batch.update(
-        _firestore.collection('users').doc(user.uid),
-        {'defaultEmergencyContactId': null},
-      );
-
-      await batch.commit();
+        transaction.delete(document);
+        final defaultId = userSnapshot.data()?['defaultEmergencyContactId'];
+        if (defaultId == id) {
+          transaction.update(userDocument, {'defaultEmergencyContactId': null});
+        }
+      });
     });
   }
 
   Future<void> setDefault(String id) {
     return _execute(() async {
-      final user = _requireUser();
       final contacts = _contactsCollection();
+      final userDocument = contacts.parent!;
       final selectedContact = contacts.doc(id);
-      final selectedSnapshot =
-          await selectedContact.get();
-
-      if (!selectedSnapshot.exists) {
-        throw const ContactException(
-          ContactErrorType.notFound,
-        );
-      }
-
-      final currentDefaults = await contacts
+      final flaggedDefaults = await contacts
           .where('isDefault', isEqualTo: true)
-          .get();
+          .get(const GetOptions(source: Source.server));
 
-      final batch = _firestore.batch();
+      await _firestore.runTransaction((transaction) async {
+        final userSnapshot = await transaction.get(userDocument);
+        final selectedSnapshot = await transaction.get(selectedContact);
 
-      for (final document in currentDefaults.docs) {
-        if (document.id != id) {
-          batch.update(
-            document.reference,
-            {'isDefault': false},
-          );
+        if (!selectedSnapshot.exists) {
+          throw const ContactException(ContactErrorType.notFound);
         }
-      }
 
-      batch.update(
-        selectedContact,
-        {'isDefault': true},
-      );
+        final previousId =
+            userSnapshot.data()?['defaultEmergencyContactId'] as String?;
+        final previousIds = {
+          for (final document in flaggedDefaults.docs) document.id,
+          if (previousId != null) previousId,
+        }..remove(id);
 
-      batch.update(
-        _firestore.collection('users').doc(user.uid),
-        {'defaultEmergencyContactId': id},
-      );
+        final previousSnapshots = await Future.wait(
+          previousIds.map(
+            (previousId) => transaction.get(contacts.doc(previousId)),
+          ),
+        );
+        for (final snapshot in previousSnapshots) {
+          if (snapshot.data()?['isDefault'] == true) {
+            transaction.update(snapshot.reference, {'isDefault': false});
+          }
+        }
 
-      await batch.commit();
+        transaction.update(selectedContact, {'isDefault': true});
+        transaction.update(userDocument, {'defaultEmergencyContactId': id});
+      });
     });
   }
 
@@ -229,30 +220,28 @@ class EmergencyContactService {
     return cleanedName;
   }
 
-  String _normalizePhone(String phone) {
-    final cleanedPhone = phone.replaceAll(
-      RegExp(r'[\s()-]'),
-      '',
-    );
-
-    if (RegExp(r'^05\d{8}$').hasMatch(cleanedPhone)) {
-      return '+966${cleanedPhone.substring(1)}';
-    }
-
-    if (RegExp(r'^\+9665\d{8}$')
-        .hasMatch(cleanedPhone)) {
-      return cleanedPhone;
-    }
-
+  String _normalizePhone(String phone, IsoCode? country) {
+    final cleanedPhone = phone.replaceAll(RegExp(r'[\s().-]'), '');
     if (cleanedPhone.isEmpty) {
-      throw const ContactException(
-        ContactErrorType.emptyPhone,
-      );
+      throw const ContactException(ContactErrorType.emptyPhone);
     }
 
-    throw const ContactException(
-      ContactErrorType.invalidPhone,
-    );
+    if (!RegExp(r'^\+?[0-9٠-٩۰-۹]+$').hasMatch(cleanedPhone) ||
+        (country == null && !cleanedPhone.startsWith('+'))) {
+      throw const ContactException(ContactErrorType.invalidPhone);
+    }
+
+    try {
+      final number = PhoneNumber.parse(cleanedPhone, callerCountry: country);
+      if ((country == null || number.isoCode == country) &&
+          number.isValid(type: PhoneNumberType.mobile)) {
+        return number.international;
+      }
+    } on PhoneNumberException {
+      throw const ContactException(ContactErrorType.invalidPhone);
+    }
+
+    throw const ContactException(ContactErrorType.invalidPhone);
   }
 
   Future<void> _ensurePhoneIsUnique(

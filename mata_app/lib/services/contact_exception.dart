@@ -21,7 +21,7 @@ class ContactException implements Exception {
       case ContactErrorType.emptyPhone:
         return 'Please enter the phone number.';
       case ContactErrorType.invalidPhone:
-        return 'Please enter a valid Saudi mobile number.';
+        return 'Enter a valid mobile number for the selected country.';
       case ContactErrorType.duplicatePhone:
         return 'This phone number is already saved.';
       case ContactErrorType.notFound:
