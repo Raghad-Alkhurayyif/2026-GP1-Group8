@@ -263,7 +263,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                             )
-                          : null,
+                          : const Padding(
+                              padding: EdgeInsets.only(top: 8, left: 4),
+                              child: _PrivacyNote(),
+                            ),
                     ),
                   MataButton(
                     label: 'Submit',
@@ -760,6 +763,41 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Tells the user, before an assessment, what is stored and what leaves the
+/// app (NFR-2).
+class _PrivacyNote extends StatelessWidget {
+  const _PrivacyNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 1),
+          child: Icon(
+            Icons.lock_outline_rounded,
+            color: MataColors.hint,
+            size: 15,
+          ),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            'Saved to your account. If any part isn\'t recognized, '
+            'it\'s sent securely to Google Gemini.',
+            style: MataText.body(
+              color: MataColors.hint,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
