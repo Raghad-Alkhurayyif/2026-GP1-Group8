@@ -14,13 +14,15 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
+import android.telephony.TelephonyManager
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.util.UUID
 
-/** Debug-only SIM SMS experiment. Never used by the production SOS sender. */
+/** Shared dispatch and duplicate protection for SOS and the debug experiment. */
 class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
     private val channel = MethodChannel(messenger, "mata/sms_poc")
+    private val productionChannel = MethodChannel(messenger, "mata/sms")
     private val handler = Handler(Looper.getMainLooper())
     private val records = activity.getSharedPreferences("sms_poc_attempts", Context.MODE_PRIVATE)
     private var permissionResult: MethodChannel.Result? = null
@@ -31,22 +33,48 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
     private val timeout = Runnable { finish("unknown") }
 
     init {
-        channel.setMethodCallHandler { call, result ->
-            if (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
-                result.error("debug_only", "SMS proof of concept requires a debug build.", null)
-            } else when (call.method) {
-                "requestPermission" -> {
-                    if (granted()) result.success("granted")
-                    else if (permissionResult != null) result.success("busy")
-                    else {
-                        permissionResult = result
-                        activity.requestPermissions(arrayOf(Manifest.permission.SEND_SMS), PERMISSION_REQUEST)
+        listOf(channel, productionChannel).forEach { registeredChannel ->
+            registeredChannel.setMethodCallHandler { call, result ->
+                if (registeredChannel === channel && activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
+                    result.error("debug_only", "SMS proof of concept requires a debug build.", null)
+                } else when (call.method) {
+                    "requestPermission" -> {
+                        if (!activity.packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) result.success("unsupported_device")
+                        else if (granted()) result.success("granted")
+                        else if (permissionResult != null) result.success("busy")
+                        else {
+                            permissionResult = result
+                            activity.requestPermissions(arrayOf(Manifest.permission.SEND_SMS), PERMISSION_REQUEST)
+                        }
                     }
+                    "prepare" -> {
+                        try {
+                            val subscription = SubscriptionManager.getDefaultSmsSubscriptionId()
+                            val status = readiness(subscription)
+                            result.success(mapOf("status" to (status ?: "ready"), "subscriptionId" to subscription))
+                        } catch (_: Exception) {
+                            result.success(mapOf("status" to "unsupported_device"))
+                        }
+                    }
+                    "send" -> {
+                        val subscription = call.argument<Int>("subscriptionId")
+                        if (registeredChannel === productionChannel && subscription == null) result.success("invalid_arguments")
+                        else send(call.argument("attemptId"), call.argument("recipient"), call.argument("message"), subscription, result)
+                    }
+                    else -> result.notImplemented()
                 }
-                "send" -> send(call.argument("attemptId"), call.argument("recipient"), call.argument("message"), result)
-                else -> result.notImplemented()
             }
         }
+    }
+
+    private fun readiness(subscription: Int): String? {
+        if (!activity.packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) return "unsupported_device"
+        if (!granted()) return "permission_denied"
+        if (subscription < 0 || subscription == Int.MAX_VALUE) return "no_default_sim"
+        val telephony = activity.getSystemService(TelephonyManager::class.java)
+            .createForSubscriptionId(subscription)
+        if (telephony.simState != TelephonyManager.SIM_STATE_READY) return "sim_not_ready"
+        return null
     }
 
     private fun granted() = activity.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
@@ -58,7 +86,7 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
     }
 
     @Suppress("DEPRECATION")
-    private fun send(id: String?, recipient: String?, message: String?, result: MethodChannel.Result) {
+    private fun send(id: String?, recipient: String?, message: String?, selectedSubscription: Int?, result: MethodChannel.Result) {
         if (id == null || !Regex("^[A-Za-z0-9-]{1,80}$").matches(id) ||
             recipient == null || !Regex("^\\+[1-9][0-9]{7,14}$").matches(recipient) ||
             message.isNullOrBlank() || message.length > 2000) {
@@ -81,6 +109,11 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
             result.success("no_default_sim"); return
         }
         try {
+            if (selectedSubscription != null && selectedSubscription != subscription) {
+                result.success("sim_changed"); return
+            }
+            val readiness = readiness(subscription)
+            if (readiness != null) { result.success(readiness); return }
             val manager = if (Build.VERSION.SDK_INT >= 31) {
                 activity.getSystemService(SmsManager::class.java).createForSubscriptionId(subscription)
             } else SmsManager.getSmsManagerForSubscriptionId(subscription)
@@ -121,9 +154,9 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
             if (parts.size == 1) manager.sendTextMessage(recipient, null, parts[0], intents[0], null)
             else manager.sendMultipartTextMessage(recipient, null, parts, ArrayList(intents), null)
         } catch (_: SecurityException) {
-            if (pendingResult != null) finish("permission_denied") else { cleanup(); result.success("permission_denied") }
+            if (pendingResult != null) finish("unknown") else { cleanup(); result.success("permission_denied") }
         } catch (_: UnsupportedOperationException) {
-            if (pendingResult != null) finish("unsupported_device") else { cleanup(); result.success("unsupported_device") }
+            if (pendingResult != null) finish("unknown") else { cleanup(); result.success("unsupported_device") }
         } catch (_: Exception) {
             // Never infer that an exception after dispatch means no message went out.
             if (pendingResult != null) finish("unknown") else { cleanup(); result.success("failed") }
@@ -152,6 +185,7 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
         permissionResult?.success("denied")
         permissionResult = null
         channel.setMethodCallHandler(null)
+        productionChannel.setMethodCallHandler(null)
     }
 
     companion object { private const val PERMISSION_REQUEST = 8301 }

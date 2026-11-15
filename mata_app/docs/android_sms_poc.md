@@ -1,8 +1,8 @@
 # Android SIM SMS proof of concept
 
-This debug-only experiment is separate from the Ma’ta SOS flow. The normal
-`lib/main.dart`, SOS controller/screens, Firebase services and StubSosSender
-remain unchanged. There is no startup send or automatic retry.
+This debug-only experiment is separate from the Ma’ta SOS flow. It shares the
+native dispatcher with production SOS but retains its manual recipient and
+confirmation screen. There is no startup send or automatic retry.
 
 ## Physical phone procedure
 
@@ -45,8 +45,9 @@ Do not distribute this proof of concept as a production SMS implementation.
 ## Implementation limits
 
 `mata/sms_poc` is gated natively to debuggable builds. The original
-`mata/telephony` channel is retained. `SEND_SMS` is declared in the main manifest
-but requested only by the explicit test action. No read-SMS, receive-SMS,
+`mata/telephony` channel is retained. Production SOS uses `mata/sms` and requests
+SMS permission before its countdown. In this experiment, permission is requested
+only by the explicit test action. No read-SMS, receive-SMS,
 contacts, phone-state or delivery-report permission is requested.
 
 The bridge calls SmsManager directly, splits messages using divideMessage and

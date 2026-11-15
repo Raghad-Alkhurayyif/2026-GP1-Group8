@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../models/emergency_contact.dart';
+
 import 'location_service.dart';
 import 'sos_sender.dart';
 
@@ -23,6 +25,7 @@ enum SosPhase {
 
   /// The system permission dialog is showing.
   requestingPermission,
+  preparingSms,
 
   /// Counting down; [SosController.secondsLeft] says how long is left.
   countingDown,
@@ -63,13 +66,13 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
   SosController({
     required SosSender sender,
     required LocationService locationService,
-    required Future<String?> Function() loadDefaultContactName,
+    required Future<EmergencyContact?> Function() loadDefaultContact,
     this.countdownSeconds = defaultCountdownSeconds,
-  })  : assert(countdownSeconds > 0),
-        _sender = sender, // ignore: prefer_initializing_formals
-        _location = locationService,
-        // ignore: prefer_initializing_formals
-        _loadDefaultContactName = loadDefaultContactName;
+  }) : assert(countdownSeconds > 0),
+       _sender = sender, // ignore: prefer_initializing_formals
+       _location = locationService,
+       // ignore: prefer_initializing_formals
+       _loadDefaultContact = loadDefaultContact;
 
   /// PBI-22 asks for "a few seconds". Five also matches the location limit,
   /// so the fix is usually ready by the time the countdown ends.
@@ -78,7 +81,9 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
   final int countdownSeconds;
   final SosSender _sender;
   final LocationService _location;
-  final Future<String?> Function() _loadDefaultContactName;
+  final Future<EmergencyContact?> Function() _loadDefaultContact;
+  EmergencyContact? _contact;
+  bool _waitingToDispatch = false;
 
   SosPhase _phase = SosPhase.idle;
   int _secondsLeft = 0;
@@ -119,11 +124,12 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Whether the user can still stop the alert.
   bool get canCancel => const {
-        SosPhase.checking,
-        SosPhase.noDefaultContact,
-        SosPhase.explainLocation,
-        SosPhase.countingDown,
-      }.contains(_phase);
+    SosPhase.checking,
+    SosPhase.preparingSms,
+    SosPhase.noDefaultContact,
+    SosPhase.explainLocation,
+    SosPhase.countingDown,
+  }.contains(_phase);
 
   /// Called when the SOS button is pressed.
   Future<void> activate() async {
@@ -138,23 +144,41 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
     _cancelReason = null;
     _expectedLocationProblem = null;
     _contactName = null;
+    _contact = null;
+    _waitingToDispatch = false;
     _startObserving();
     _setPhase(SosPhase.checking);
 
-    String? name;
+    EmergencyContact? contact;
     try {
-      name = await _loadDefaultContactName();
+      contact = await _loadDefaultContact().timeout(
+        const Duration(seconds: 10),
+      );
     } catch (_) {
-      name = null;
+      if (run == _run) {
+        _finishPreparation(
+          const SosResult(
+            outcome: SosOutcome.failed,
+            reason: 'contact_unavailable',
+            retryAllowed: true,
+          ),
+        );
+      }
+      return;
     }
     if (run != _run) return;
-    if (name == null || name.trim().isEmpty) {
+    if (contact == null) {
       _stopObserving();
       _setPhase(SosPhase.noDefaultContact);
       return;
     }
-    _contactName = name;
+    _contact = contact;
+    _contactName = contact.name;
+    if (!await _prepareSms(run)) return;
+    await _prepareLocation(run);
+  }
 
+  Future<void> _prepareLocation(int run) async {
     final needsExplanation = await _location.needsExplanation();
     if (run != _run) return;
     if (needsExplanation) {
@@ -162,6 +186,40 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     await _startCountdown(run);
+  }
+
+  void _finishPreparation(SosResult result) {
+    _result = result;
+    _stopObserving();
+    _setPhase(SosPhase.finished);
+  }
+
+  Future<bool> _prepareSms(int run) async {
+    _setPhase(SosPhase.preparingSms);
+    SosResult? failure;
+    try {
+      failure = await _sender.prepare(_contact!);
+    } catch (_) {
+      failure = SosResult(
+        outcome: SosOutcome.failed,
+        reason: 'preparation_failed',
+        contactName: _contactName,
+        retryAllowed: true,
+      );
+    }
+    if (run != _run || _disposed) return false;
+    if (failure != null) {
+      _finishPreparation(failure);
+      return false;
+    }
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle == AppLifecycleState.hidden ||
+        lifecycle == AppLifecycleState.paused ||
+        lifecycle == AppLifecycleState.detached) {
+      _cancel(SosCancelReason.interrupted);
+      return false;
+    }
+    return true;
   }
 
   /// Called from the explanation screen's continue button. Shows the system
@@ -177,6 +235,14 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _startCountdown(int run) async {
+    if (run != _run || _disposed) return;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle == AppLifecycleState.hidden ||
+        lifecycle == AppLifecycleState.paused ||
+        lifecycle == AppLifecycleState.detached) {
+      _cancel(SosCancelReason.interrupted);
+      return;
+    }
     // Start the fix now so it overlaps the countdown. It is bounded by the
     // 5-second limit and never throws.
     _pendingLocation = _location.getCurrentLocation();
@@ -237,31 +303,47 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
     _setPhase(SosPhase.cancelled);
   }
 
-  /// The Retry control on the failure screen (PBI-24 AC 3). Sends again at
-  /// once, without a second countdown.
+  /// Retry is explicit and only allowed after a known pre-dispatch failure.
   Future<void> retry() async {
-    if (_phase != SosPhase.finished || _result?.wasSent == true) return;
+    if (_phase != SosPhase.finished || _result?.retryAllowed != true) return;
+    // Explicit retry performs preparation and countdown again. Never blindly
+    // redispatch a possibly sent alert. Retain this activation's recipient.
+    if (_contact == null) {
+      await activate();
+      return;
+    }
     final run = ++_run;
-    _pendingLocation = _location.getCurrentLocation();
-    await _send(run);
+    _result = null;
+    _startObserving();
+    if (!await _prepareSms(run)) return;
+    await _prepareLocation(run);
   }
 
   Future<void> _send(int run) async {
-    if (run != _run || _disposed) return;
-    _stopObserving(); // once sending starts, leaving the app cannot stop it
-    _setPhase(SosPhase.sending);
+    if (run != _run ||
+        _disposed ||
+        _waitingToDispatch ||
+        _phase != SosPhase.countingDown) {
+      return;
+    }
+    _waitingToDispatch = true;
 
     final location = await (_pendingLocation ?? _location.getCurrentLocation());
+    _waitingToDispatch = false;
+    if (run != _run || _disposed || _phase != SosPhase.countingDown) return;
     _pendingLocation = null;
     _lastLocation = location;
-    // No cancel check here: once the countdown has ended the alert must go
-    // out (PBI-22 AC 3), even if the screen is closed meanwhile.
+    _stopObserving();
+    _setPhase(SosPhase.sending);
 
     SosResult result;
     try {
       result = await _sender.send(location: location);
     } catch (_) {
-      result = SosResult(outcome: SosOutcome.failed, contactName: _contactName);
+      result = SosResult(
+        outcome: SosOutcome.unknown,
+        contactName: _contactName,
+      );
     }
     if (_disposed) return;
     _result = result;
@@ -287,7 +369,10 @@ class SosController extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.hidden ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      if (_phase == SosPhase.requestingPermission) return;
+      if (_phase == SosPhase.requestingPermission ||
+          _phase == SosPhase.preparingSms) {
+        return;
+      }
       _cancel(SosCancelReason.interrupted);
     }
   }

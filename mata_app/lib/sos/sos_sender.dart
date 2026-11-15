@@ -1,16 +1,23 @@
 import 'location_service.dart';
+import '../models/emergency_contact.dart';
 
 /// How a send attempt ended (PBI-20, PBI-21, PBI-24).
-enum SosOutcome { sent, failed, noDefaultContact, noNetwork }
+enum SosOutcome { sent, failed, noDefaultContact, noNetwork, partial, unknown }
 
 class SosResult {
   const SosResult({
     required this.outcome,
     this.contactName,
     this.locationIncluded = false,
+    this.reason,
+    this.retryAllowed = false,
   });
 
   final SosOutcome outcome;
+  final String? reason;
+
+  /// True only when the sender knows dispatch never occurred.
+  final bool retryAllowed;
 
   /// The default contact the alert was addressed to, for the result screen.
   final String? contactName;
@@ -37,9 +44,12 @@ class SosResult {
 /// location is unavailable (PBI-21, AC 2 and 4); [LocationResult.mapLink]
 /// gives the link when it is available.
 ///
-/// [send] should not throw. If it does, the controller treats it as
-/// [SosOutcome.failed].
+/// [send] should not throw. An exception after dispatch is conservatively
+/// treated as [SosOutcome.unknown], with no retry offered.
 abstract class SosSender {
+  /// Freezes a recipient and resolves permission/SIM without dispatching.
+  /// Null means ready; a result means preparation failed.
+  Future<SosResult?> prepare(EmergencyContact contact);
   Future<SosResult> send({required LocationResult location});
 }
 
@@ -55,6 +65,9 @@ class StubSosSender implements SosSender {
   final SosOutcome outcome;
   final String? contactName;
   final Duration delay;
+
+  @override
+  Future<SosResult?> prepare(EmergencyContact contact) async => null;
 
   @override
   Future<SosResult> send({required LocationResult location}) async {
