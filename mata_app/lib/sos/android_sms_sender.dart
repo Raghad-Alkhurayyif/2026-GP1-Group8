@@ -74,7 +74,7 @@ class AndroidSmsSender implements SosSender {
   );
 
   static String composeMessage(LocationResult location) =>
-      'Ma’ta SOS: I need help. Please contact me immediately.\n'
+      'MATA SOS: I need help. Please contact me immediately.\n'
       '${location.isAvailable ? 'My location: ${location.mapLink}' : 'My location is unavailable.'}';
 
   @override

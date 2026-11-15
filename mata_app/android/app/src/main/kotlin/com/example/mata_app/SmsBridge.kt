@@ -15,6 +15,7 @@ import android.os.Looper
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
+import android.util.Log
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.util.UUID
@@ -29,6 +30,7 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
     private var pendingResult: MethodChannel.Result? = null
     private var receiver: BroadcastReceiver? = null
     private var activeId: String? = null
+    private var segmentCount = 0
     private val intents = mutableListOf<PendingIntent>()
     private val timeout = Runnable { finish("unknown") }
 
@@ -118,22 +120,15 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
                 activity.getSystemService(SmsManager::class.java).createForSubscriptionId(subscription)
             } else SmsManager.getSmsManagerForSubscriptionId(subscription)
             val parts = manager.divideMessage(message)
-            val outcomes = arrayOfNulls<Int>(parts.size)
+            val outcomes = SmsSendResults(parts.size)
+            segmentCount = parts.size
             val action = "${activity.packageName}.SMS_POC.${UUID.randomUUID()}"
             receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     val index = intent.getIntExtra("part", -1)
-                    if (index !in outcomes.indices || outcomes[index] != null) return
-                    outcomes[index] = resultCode
-                    if (outcomes.all { it != null }) {
-                        finish(when {
-                            outcomes.all { it == Activity.RESULT_OK } -> "sent"
-                            outcomes.any { it == Activity.RESULT_OK } -> "partial"
-                            outcomes.any { it == SmsManager.RESULT_RIL_SIM_ABSENT } -> "no_sim"
-                            outcomes.any { it == SmsManager.RESULT_ERROR_NO_SERVICE || it == SmsManager.RESULT_ERROR_RADIO_OFF || it == SmsManager.RESULT_RADIO_NOT_AVAILABLE } -> "no_service"
-                            else -> "failed"
-                        })
-                    }
+                    // Log before filtering so duplicate/conflicting/invalid callbacks are visible.
+                    diagnostic(id, parts.size, index, resultCode)
+                    outcomes.record(index, resultCode)?.let { finish(it) }
                 }
             }
             if (Build.VERSION.SDK_INT >= 33) {
@@ -145,6 +140,7 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
                     PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE))
             }
             activeId = id
+            diagnostic(id, parts.size)
             pendingResult = result
             // Commit before dispatch; a crash in this window conservatively becomes unknown.
             if (!records.edit().putString(id, "unknown").commit()) {
@@ -164,12 +160,27 @@ class SmsBridge(private val activity: Activity, messenger: BinaryMessenger) {
     }
 
     private fun finish(status: String) {
+        activeId?.let {
+            diagnostic(it, segmentCount, aggregate = when (status) {
+                "sent", "partial", "unknown" -> status
+                else -> "failed"
+            })
+        }
         activeId?.let { records.edit().putString(it, status).commit() }
         val result = pendingResult
         pendingResult = null
         activeId = null
         cleanup()
         result?.success(status)
+    }
+
+    /** Allowlisted metadata only. Never pass channel arguments or Intents to logs. */
+    private fun diagnostic(attemptId: String, segments: Int, index: Int? = null,
+                           code: Int? = null, aggregate: String? = null) {
+        if (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) return
+        Log.d("MataSms", "attempt=$attemptId segments=$segments" +
+            (if (index != null) " segment=$index resultCode=$code" else "") +
+            (if (aggregate != null) " aggregate=$aggregate" else ""))
     }
 
     private fun cleanup() {

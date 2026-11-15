@@ -58,6 +58,31 @@ class FakeSender implements SosSender {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('GSM-7 SOS message template', () {
+    const prefix = 'MATA SOS: I need help. Please contact me immediately.\n';
+    // Every character in this allowlist is in the GSM-7 basic alphabet.
+    final alphabet = RegExp(r'^[A-Za-z0-9 .:\n/?=,\-]+$');
+
+    test(
+      'location message uses existing Maps link and fits one basic GSM SMS',
+      () {
+        const location = LocationResult.found(-90, -180);
+        final message = AndroidSmsSender.composeMessage(location);
+        expect(message, '${prefix}My location: ${location.mapLink}');
+        expect(alphabet.hasMatch(message), isTrue);
+        expect(message.length, lessThanOrEqualTo(160));
+        expect(message.contains('Ma’ta'), isFalse);
+      },
+    );
+
+    test('unavailable message has exact short GSM-7 fallback', () {
+      final message = AndroidSmsSender.composeMessage(unavailable);
+      expect(message, '${prefix}My location is unavailable.');
+      expect(alphabet.hasMatch(message), isTrue);
+      expect(message.length, lessThanOrEqualTo(160));
+    });
+  });
+
   SosController controller(
     FakeSender sender,
     FakeLocation location, {
