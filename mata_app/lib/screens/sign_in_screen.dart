@@ -55,11 +55,22 @@ class _SignInScreenState extends State<SignInScreen> {
       if (!mounted) return;
 
       Navigator.of(context).popUntil((route) => route.isFirst);
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (error) {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = 'Invalid email or password.';
+        _errorMessage = switch (error.code) {
+          'network-request-failed' =>
+            'Could not connect. Check your internet connection and try again.',
+          'invalid-email' => 'Please enter a valid email address.',
+          'invalid-credential' ||
+          'invalid-login-credentials' ||
+          'user-not-found' ||
+          'wrong-password' => 'Invalid email or password.',
+          'too-many-requests' => 'Too many attempts. Please try again later.',
+          'user-disabled' => 'This account has been disabled.',
+          _ => 'Could not sign in right now. Please try again.',
+        };
       });
     } catch (_) {
       if (!mounted) return;
