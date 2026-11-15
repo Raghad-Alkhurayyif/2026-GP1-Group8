@@ -80,6 +80,11 @@ class _EmergencyContactFormScreenState
       useSafeArea: true,
       countryFilter: _countryCodes.keys.toList(),
       countryListTheme: CountryListThemeData(
+        backgroundColor: MataColors.cream,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        bottomSheetHeight: MediaQuery.sizeOf(context).height * 0.8,
+        textStyle: MataText.body(fontSize: 14),
+        searchTextStyle: MataText.body(fontSize: 15),
         inputDecoration: MataFields.light(hintText: 'Search countries'),
       ),
       onSelect: (country) {
