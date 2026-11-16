@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/mata_theme.dart';
+import '../widgets/sos_button.dart';
 import '../widgets/severity_scale.dart';
 import '../widgets/stroke_background.dart';
 import 'symptom_completion_screen.dart';
@@ -333,7 +334,18 @@ class _SymptomDetailsScreenState extends State<SymptomDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const MataCornerLogo(),
+                  // The SOS button stays reachable here too (PBI-19).
+                  const SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        MataCornerLogo(),
+                        Positioned(right: 0, top: -2, child: SosButton()),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 22),
                   Row(
                     children: [

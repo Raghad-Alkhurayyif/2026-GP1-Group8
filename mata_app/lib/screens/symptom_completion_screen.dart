@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/mata_theme.dart';
+import '../widgets/sos_button.dart';
 import '../widgets/stroke_background.dart';
 
 class SymptomCompletionScreen extends StatelessWidget {
@@ -29,9 +30,17 @@ class SymptomCompletionScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(28, 14, 28, 20),
               child: Column(
                 children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: MataCornerLogo(),
+                  // The SOS button stays reachable here too (PBI-19).
+                  const SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        MataCornerLogo(),
+                        Positioned(right: 0, top: -2, child: SosButton()),
+                      ],
+                    ),
                   ),
                   const Spacer(),
                   Container(
