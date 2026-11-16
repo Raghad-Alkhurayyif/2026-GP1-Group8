@@ -84,3 +84,28 @@ def assign_subject(request: SubjectRequest) -> dict:
             status_code=500,
             detail="Updating the symptoms failed.",
         ) from error
+
+
+class AgeRequest(BaseModel):
+    result: dict
+    age: int
+
+    @field_validator("age")
+    @classmethod
+    def validate_age(cls, value: int) -> int:
+        if not 0 <= value <= 120:
+            raise ValueError("Age must be from 0 to 120.")
+
+        return value
+
+
+@app.post("/apply-age")
+def apply_age(request: AgeRequest) -> dict:
+    try:
+        return pipeline.for_age(request.result, request.age)
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail="Applying the age rules failed.",
+        ) from error

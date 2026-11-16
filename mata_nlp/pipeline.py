@@ -153,6 +153,45 @@ class Pipeline:
         """
         return subject.for_subject(result, who, vocab=self.layer1.vocab)
 
+    def for_age(self, result, age):
+        """
+        `result` with the age rules applied, once the app knows who the
+        assessment is for and how old they are. A symptom whose column only
+        applies within an age range that `age` falls outside of (an adult
+        with `irritable infant`, an 8-year-old with `vaginal bleeding after
+        menopause`) is moved out of `symptoms` and `confirm` into `age_set_aside`
+        and recorded in `excluded` as `age_mismatch`. It is never dropped
+        silently: the app shows `age_set_aside` so the user can say the
+        symptom applies after all.
+
+        Layer 1 can apply the same rule during extraction, but only when the
+        age is known before the text is read. In the app it is not: whether
+        the assessment is for the user or for someone else is asked after
+        extraction, so the age is applied here instead.
+        """
+        result = dict(result)
+        set_aside = list(result.get("age_set_aside", []))
+        excluded = list(result.get("excluded", []))
+
+        def ruled_out(column):
+            meta = self.layer1.vocab.get(column, {})
+            lo, hi = meta.get("age_min"), meta.get("age_max")
+            return (lo is not None and age < lo) or (hi is not None and age > hi)
+
+        for field in ("symptoms", "confirm"):
+            kept = []
+            for s in result.get(field, []):
+                if ruled_out(s.get("column", "")):
+                    set_aside.append(s)
+                    excluded.append({**s, "status": "age_mismatch"})
+                else:
+                    kept.append(s)
+            result[field] = kept
+
+        result["age_set_aside"] = set_aside
+        result["excluded"] = excluded
+        return result
+
 
 if __name__ == "__main__":
     p = Pipeline()

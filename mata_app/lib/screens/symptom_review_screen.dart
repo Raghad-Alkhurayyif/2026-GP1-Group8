@@ -38,6 +38,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
   late final List<_ReviewedSymptom> _conflictingSymptoms;
   late final List<_ReviewedSymptom> _setAsideSymptoms;
   late final List<_ReviewedSymptom> _possibleSymptoms;
+  late final List<_ReviewedSymptom> _ageSetAsideSymptoms;
 
   // True when the user said the assessment is for someone else, so every
   // line on this screen talks about "they", not "you".
@@ -55,6 +56,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       ..._conflictingSymptoms,
       ..._setAsideSymptoms,
       ..._possibleSymptoms,
+      ..._ageSetAsideSymptoms,
     ];
     return all.every(
           (symptom) => _decisions.containsKey(symptom.column),
@@ -111,6 +113,15 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
     // Mentioned only as a possibility ("I might have a cough"). Asked here
     // instead of on a page of their own before this one.
     _possibleSymptoms = _buildItems(widget.extractionResult['confirm'])
+        .where((s) => !reviewedColumns.contains(s.column))
+        .toList();
+
+    reviewedColumns.addAll(_possibleSymptoms.map((s) => s.column));
+
+    // Left out because the age of the person being assessed rules them out
+    // (an adult with "irritable infant"). Shown so the user can correct us,
+    // never dropped silently.
+    _ageSetAsideSymptoms = _buildItems(widget.extractionResult['age_set_aside'])
         .where((s) => !reviewedColumns.contains(s.column))
         .toList();
 
@@ -345,6 +356,7 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
       ..._conflictingSymptoms,
       ..._setAsideSymptoms,
       ..._possibleSymptoms,
+      ..._ageSetAsideSymptoms,
     ];
 
     Map<String, dynamic> toJson(
@@ -537,7 +549,8 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
         _deniedSymptoms.isEmpty &&
         _conflictingSymptoms.isEmpty &&
         _setAsideSymptoms.isEmpty &&
-        _possibleSymptoms.isEmpty) {
+        _possibleSymptoms.isEmpty &&
+        _ageSetAsideSymptoms.isEmpty) {
       return Center(
         child: Text(
           'No symptoms were identified.\n'
@@ -622,6 +635,19 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
                 : 'You mentioned these as a possibility. '
                     'Do you have them?',
             symptoms: _possibleSymptoms,
+            isOriginallyDenied: false,
+          ),
+
+        if (_ageSetAsideSymptoms.isNotEmpty)
+          _buildSection(
+            dot: const Color(0xFF9C8B80),
+            title: 'Symptoms Unusual at This Age',
+            description: _forSomeoneElse
+                ? 'We left these out because they do not usually apply '
+                    'at their age. Tell us if they have them.'
+                : 'We left these out because they do not usually apply '
+                    'at your age. Tell us if you have them.',
+            symptoms: _ageSetAsideSymptoms,
             isOriginallyDenied: false,
           ),
       ],

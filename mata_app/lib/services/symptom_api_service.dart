@@ -64,4 +64,36 @@ class SymptomApiService {
 
     return Map<String, dynamic>.from(body);
   }
+
+  /// Moves symptoms that the assessed person's [age] rules out into
+  /// 'age_set_aside', so the review screen can ask about them.
+  Future<Map<String, dynamic>> applyAge(
+    Map<String, dynamic> result,
+    int age,
+  ) async {
+    final response = await http
+        .post(
+          Uri.parse('$_baseUrl/apply-age'),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'result': result,
+            'age': age,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    final body = jsonDecode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        body is Map
+            ? body['detail'] ?? 'Applying the age rules failed.'
+            : 'Applying the age rules failed.',
+      );
+    }
+
+    return Map<String, dynamic>.from(body);
+  }
 }

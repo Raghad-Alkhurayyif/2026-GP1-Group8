@@ -378,6 +378,37 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
 
       final description = widget.description;
 
+      // The age rules run once it is known who the assessment is for, and
+      // so whose age applies: the user's own, from their date of birth, or
+      // the age given for someone else.
+      Future<Map<String, dynamic>> withAgeRules(
+        Map<String, dynamic> reviewResult,
+        Map<String, dynamic> answers,
+      ) async {
+        final int age;
+        if (answers['confirm_subject'] == false) {
+          final savedAge = answers['subject_age'];
+          if (savedAge is! int) {
+            throw StateError('The assessed person age was not found.');
+          }
+          age = savedAge;
+        } else {
+          age = await _assessmentService.getCurrentUserAge();
+        }
+        return _apiService.applyAge(reviewResult, age);
+      }
+
+      void showUpdateError(BuildContext screenContext) {
+        ScaffoldMessenger.of(screenContext).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'We could not update your symptoms. '
+              'Please try again.',
+            ),
+          ),
+        );
+      }
+
       Route<void> buildReviewRoute(
         Map<String, dynamic> reviewResult,
         Map<String, dynamic> followUpAnswers,
@@ -490,12 +521,28 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
             return FollowUpQuestionsScreen(
               extractionResult: questionResult,
               forSomeoneElse: subjectAnswers['confirm_subject'] == false,
-              onContinue: (answers) {
+              onContinue: (answers) async {
+                final reviewAnswers = {
+                  ...answers,
+                  ...subjectAnswers,
+                };
+
+                final Map<String, dynamic> agedResult;
+
+                try {
+                  agedResult = await withAgeRules(
+                    questionResult,
+                    reviewAnswers,
+                  );
+                } catch (_) {
+                  if (questionsContext.mounted) showUpdateError(questionsContext);
+                  return;
+                }
+
+                if (!questionsContext.mounted) return;
+
                 Navigator.of(questionsContext).push(
-                  buildReviewRoute(questionResult, {
-                    ...answers,
-                    ...subjectAnswers,
-                  }),
+                  buildReviewRoute(agedResult, reviewAnswers),
                 );
               },
             );
@@ -544,17 +591,38 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                     'subject_age': subjectAnswers['subject_age'],
                   };
 
+                  if (_hasFollowUpQuestions(subjectResult)) {
+                    Navigator.of(subjectContext).push(
+                      buildQuestionsRoute(
+                        subjectResult,
+                        subjectAnswers: answers,
+                      ),
+                    );
+                    return;
+                  }
+
+                  final reviewAnswers = {
+                    'clarifications': <Map<String, dynamic>>[],
+                    'confirmations': <Map<String, dynamic>>[],
+                    ...answers,
+                  };
+
+                  final Map<String, dynamic> agedResult;
+
+                  try {
+                    agedResult = await withAgeRules(
+                      subjectResult,
+                      reviewAnswers,
+                    );
+                  } catch (_) {
+                    if (subjectContext.mounted) showUpdateError(subjectContext);
+                    return;
+                  }
+
+                  if (!subjectContext.mounted) return;
+
                   Navigator.of(subjectContext).push(
-                    _hasFollowUpQuestions(subjectResult)
-                        ? buildQuestionsRoute(
-                            subjectResult,
-                            subjectAnswers: answers,
-                          )
-                        : buildReviewRoute(subjectResult, {
-                            'clarifications': <Map<String, dynamic>>[],
-                            'confirmations': <Map<String, dynamic>>[],
-                            ...answers,
-                          }),
+                    buildReviewRoute(agedResult, reviewAnswers),
                   );
                 },
               );
@@ -564,12 +632,18 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       } else if (hasFollowUpQuestions) {
         Navigator.of(context).pushReplacement(buildQuestionsRoute(result));
       } else {
+        const reviewAnswers = <String, dynamic>{
+          'clarifications': <Map<String, dynamic>>[],
+          'confirmations': <Map<String, dynamic>>[],
+          'confirm_subject': null,
+        };
+
+        final agedResult = await withAgeRules(result, reviewAnswers);
+
+        if (!mounted) return;
+
         Navigator.of(context).pushReplacement(
-          buildReviewRoute(result, const {
-            'clarifications': <Map<String, dynamic>>[],
-            'confirmations': <Map<String, dynamic>>[],
-            'confirm_subject': null,
-          }),
+          buildReviewRoute(agedResult, reviewAnswers),
         );
       }
     } catch (error) {
