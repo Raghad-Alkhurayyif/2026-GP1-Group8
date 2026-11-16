@@ -18,7 +18,7 @@ class SymptomApiService {
             'text': text,
           }),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(const Duration(seconds: 15));
 
     final body = jsonDecode(response.body);
 
@@ -50,7 +50,7 @@ class SymptomApiService {
             'subject': subject,
           }),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(const Duration(seconds: 15));
 
     final body = jsonDecode(response.body);
 
@@ -82,7 +82,7 @@ class SymptomApiService {
             'age': age,
           }),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(const Duration(seconds: 15));
 
     final body = jsonDecode(response.body);
 
