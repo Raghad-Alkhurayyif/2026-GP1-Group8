@@ -62,13 +62,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final todayOnly = DateTime(today.year, today.month, today.day);
 
     if (dateOfBirth.isAfter(todayOnly)) {
-      return 'The date of birth is not valid.';
+      return 'Please enter a valid date of birth.';
     }
 
     final age = _calculateAge(dateOfBirth);
 
     if (age > 120) {
-      return 'The date of birth is not valid.';
+      return 'Please enter a valid date of birth.';
     }
 
     if (age < 18) {
@@ -354,7 +354,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               }
 
                               if (!_passwordIsValid) {
-                                return 'Please complete all password requirements.';
+                                return 'Please meet all password requirements.';
                               }
 
                               return null;
