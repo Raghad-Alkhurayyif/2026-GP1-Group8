@@ -55,7 +55,7 @@ me* keeps `feeling hot` and records `fever` as denied; answered *for my
 sister* it keeps only `fever`. `unknown` findings are kept either way, and
 whatever is left out comes back in `set_aside` so the review screen can show
 it and let the user correct us. See
-`src/subject.py`; tests in `tests/test_subject.py`.
+`src/subject.py`.
 
 `feature_vector()` returns the 327-column vector that the condition
 classifier will consume: `1` asserted, `0` denied, `−1` unknown.
