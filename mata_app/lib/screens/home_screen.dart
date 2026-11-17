@@ -863,7 +863,7 @@ class _PrivacyNote extends StatelessWidget {
         Expanded(
           child: Text(
             'Saved to your account. If any part isn\'t recognized, '
-            'it\'s sent securely to Google Gemini.',
+            'your description is sent securely to Google Gemini.',
             style: MataText.body(
               color: MataColors.hint,
               fontSize: 12,
