@@ -138,154 +138,164 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const MataCornerLogo(),
-                  const SizedBox(height: 34),
-                  RichText(
-                    text: TextSpan(
-                      style: MataText.display(fontSize: 30, height: 1.2),
-                      children: const [
-                        TextSpan(text: "Tell us what you're\n"),
-                        TextSpan(
-                          text: 'experiencing',
-                          style: TextStyle(color: brown),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Describe your symptoms in your own words. '
-                    'Include what you feel, where you feel it, and any '
-                    'other details you think are important.',
-                    style: MataText.body(
-                      color: MataColors.muted,
-                      fontSize: 14.5,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Leave out names, phone numbers, and other personal '
-                    'details.',
-                    style: MataText.body(
-                      color: MataColors.sos,
-                      fontSize: 14.5,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  SizedBox(
-                    height: _notice == null ? 230 : 178,
-                    child: MataGlass(
-                      glow: true,
-                      radius: 26,
-                      opacity: 0.72,
-                      padding: EdgeInsets.zero,
-                      borderColor: _showError ? red : null,
-                      child: TextField(
-                        controller: _symptomsController,
-                        expands: true,
-                        maxLines: null,
-                        minLines: null,
-                        textAlignVertical: TextAlignVertical.top,
-                        keyboardType: TextInputType.multiline,
-                        onChanged: (value) {
-                          if (_showError && value.trim().isNotEmpty) {
-                            setState(() {
-                              _showError = false;
-                            });
-                          }
-                        },
-                        style: MataText.body(
-                          color: MataColors.ink,
-                          fontSize: 15,
-                          height: 1.65,
-                        ),
-                        decoration: InputDecoration(
-                          hintText:
-                              "For example: I've had a strong headache "
-                              'since this morning and I feel dizzy when I '
-                              'stand up...',
-                          hintStyle: MataText.body(
-                            color: MataColors.hint,
-                            fontSize: 15,
-                            height: 1.65,
+                  // Scrolls instead of overflowing when a long notice
+                  // leaves too little room above the navigation bar.
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const MataCornerLogo(),
+                          const SizedBox(height: 34),
+                          RichText(
+                            text: TextSpan(
+                              style: MataText.display(fontSize: 30, height: 1.2),
+                              children: const [
+                                TextSpan(text: "Tell us what you're\n"),
+                                TextSpan(
+                                  text: 'experiencing',
+                                  style: TextStyle(color: brown),
+                                ),
+                              ],
+                            ),
                           ),
-                          hintMaxLines: 4,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.fromLTRB(
-                            20,
-                            18,
-                            20,
-                            18,
+                          const SizedBox(height: 12),
+                          Text(
+                            'Describe your symptoms in your own words. '
+                            'Include what you feel, where you feel it, and any '
+                            'other details you think are important.',
+                            style: MataText.body(
+                              color: MataColors.muted,
+                              fontSize: 14.5,
+                              height: 1.6,
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_notice != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12, bottom: 14),
-                      child: AnalysisNoticeCard(
-                        notice: _notice!,
-                        onDismiss: () => setState(() => _notice = null),
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      // Taller for the privacy note and its Gemini switch.
-                      height: _showError ? 46 : 80,
-                      child: _showError
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 12, left: 4),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.info_outline_rounded,
-                                    color: red,
-                                    size: 20,
+                          const SizedBox(height: 6),
+                          Text(
+                            'Leave out names, phone numbers, and other personal '
+                            'details.',
+                            style: MataText.body(
+                              color: MataColors.sos,
+                              fontSize: 14.5,
+                              height: 1.6,
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+                          SizedBox(
+                            height: _notice == null ? 230 : 178,
+                            child: MataGlass(
+                              glow: true,
+                              radius: 26,
+                              opacity: 0.72,
+                              padding: EdgeInsets.zero,
+                              borderColor: _showError ? red : null,
+                              child: TextField(
+                                controller: _symptomsController,
+                                expands: true,
+                                maxLines: null,
+                                minLines: null,
+                                textAlignVertical: TextAlignVertical.top,
+                                keyboardType: TextInputType.multiline,
+                                onChanged: (value) {
+                                  if (_showError && value.trim().isNotEmpty) {
+                                    setState(() {
+                                      _showError = false;
+                                    });
+                                  }
+                                },
+                                style: MataText.body(
+                                  color: MataColors.ink,
+                                  fontSize: 15,
+                                  height: 1.65,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText:
+                                      "For example: I've had a strong headache "
+                                      'since this morning and I feel dizzy when I '
+                                      'stand up...',
+                                  hintStyle: MataText.body(
+                                    color: MataColors.hint,
+                                    fontSize: 15,
+                                    height: 1.65,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text.rich(
-                                      TextSpan(
+                                  hintMaxLines: 4,
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    18,
+                                    20,
+                                    18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (_notice != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12, bottom: 14),
+                              child: AnalysisNoticeCard(
+                                notice: _notice!,
+                                onDismiss: () => setState(() => _notice = null),
+                              ),
+                            )
+                          else
+                            SizedBox(
+                              // Taller for the privacy note and its Gemini switch.
+                              height: _showError ? 46 : 80,
+                              child: _showError
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(top: 12, left: 4),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          TextSpan(
-                                            text: 'Symptoms required. ',
-                                            style: MataText.body(
-                                              color: red,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                          const Icon(
+                                            Icons.info_outline_rounded,
+                                            color: red,
+                                            size: 20,
                                           ),
-                                          TextSpan(
-                                            text:
-                                                'Please describe your symptoms '
-                                                'before submitting.',
-                                            style: MataText.body(
-                                              color: red,
-                                              fontSize: 13,
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text.rich(
+                                              TextSpan(
+                                                children: [
+                                                  TextSpan(
+                                                    text: 'Symptoms required. ',
+                                                    style: MataText.body(
+                                                      color: red,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  TextSpan(
+                                                    text:
+                                                        'Please describe your symptoms '
+                                                        'before submitting.',
+                                                    style: MataText.body(
+                                                      color: red,
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
+                                    )
+                                  : const Padding(
+                                      padding: EdgeInsets.only(top: 8, left: 4),
+                                      child: _PrivacyNote(),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : const Padding(
-                              padding: EdgeInsets.only(top: 8, left: 4),
-                              child: _PrivacyNote(),
                             ),
+                          MataButton(
+                            label: 'Submit',
+                            loading: _isSubmitting,
+                            onPressed: _isSubmitting ? null : _submitSymptoms,
+                          ),
+                        ],
+                      ),
                     ),
-                  MataButton(
-                    label: 'Submit',
-                    loading: _isSubmitting,
-                    onPressed: _isSubmitting ? null : _submitSymptoms,
                   ),
-                  const Spacer(),
                   MataBottomNavigationBar(
                     currentIndex: 0,
                     onHomeTap: () {},
