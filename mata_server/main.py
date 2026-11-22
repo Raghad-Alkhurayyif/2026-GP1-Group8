@@ -24,6 +24,8 @@ pipeline = Pipeline(
 
 class ExtractionRequest(BaseModel):
     text: str
+    # False when the user has declined Gemini in the app.
+    use_gemini: bool = True
 
     @field_validator("text")
     @classmethod
@@ -49,7 +51,10 @@ def health() -> dict[str, str]:
 @app.post("/extract")
 def extract(request: ExtractionRequest) -> dict:
     try:
-        result = pipeline.run(request.text)
+        result = pipeline.run(
+            request.text,
+            use_llm=request.use_gemini,
+        )
 
         layers_run = result.get("layers_run", [])
         result["degraded"] = any(
@@ -58,6 +63,12 @@ def extract(request: ExtractionRequest) -> dict:
                 "llm:unavailable",
             }
             for layer in layers_run
+        )
+        # Gemini was declined and part of the text went unmatched, so the
+        # app tells the user less common wording may have been missed.
+        result["gemini_off"] = (
+            "llm:declined" in layers_run
+            and bool(result.get("unmatched"))
         )
 
         return result

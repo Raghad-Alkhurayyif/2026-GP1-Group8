@@ -110,13 +110,16 @@ class Pipeline:
                 state[n["column"]] = 0
         return cols, [state[c] for c in cols]
 
-    def run(self, text, age=None, known=(), rounds_done=0):
+    def run(self, text, age=None, known=(), rounds_done=0, use_llm=True):
         r = self.layer1.extract(text, age=age)
         if self.layer2 is not None:
             r = self.layer2.extend(r)
         else:
             r = layer2_embed.extend(r)
-        if self.layer3 is not None:
+        if not use_llm:
+            # The user declined Gemini: nothing leaves the server.
+            r.setdefault("layers_run", []).append("llm:declined")
+        elif self.layer3 is not None:
             r = self.layer3.extend(r)
         else:
             r = layer3_llm.extend(r)

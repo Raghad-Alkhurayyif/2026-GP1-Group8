@@ -45,6 +45,16 @@ class AnalysisNotice {
         '“headache”, “fever” or “pain in my lower back”.',
   );
 
+  static const notRecognizedGeminiOff = AnalysisNotice(
+    title: 'We couldn’t find any symptoms',
+    message:
+        'We didn’t recognize a symptom in your description. Gemini is off, '
+        'so less common wording may be missed.',
+    suggestion:
+        'Try describing what you feel in simple, everyday words, such as '
+        '“headache”, “fever” or “pain in my lower back”, or turn Gemini on.',
+  );
+
   static const notCurrent = AnalysisNotice(
     title: 'Nothing current to assess',
     message:
@@ -116,6 +126,9 @@ class AnalysisNotice {
       return tooShort;
     }
 
+    if (result['gemini_off'] == true) {
+      return notRecognizedGeminiOff;
+    }
     return result['degraded'] == true ? notRecognizedLimited : notRecognized;
   }
 

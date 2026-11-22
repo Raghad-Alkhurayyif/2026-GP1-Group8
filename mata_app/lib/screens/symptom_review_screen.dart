@@ -495,12 +495,16 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
             height: 1.55,
           ),
         ),
-        if (widget.extractionResult['degraded'] == true) ...[
+        if (widget.extractionResult['gemini_off'] == true ||
+            widget.extractionResult['degraded'] == true) ...[
           const SizedBox(height: 8),
           Text(
-            'Part of our analysis was unavailable, so less common wording '
-            'may have been missed. If a symptom is missing, edit your '
-            'description.',
+            widget.extractionResult['gemini_off'] == true
+                ? 'Gemini is off, so less common wording may have been '
+                    'missed. If a symptom is missing, edit your description.'
+                : 'Part of our analysis was unavailable, so less common '
+                    'wording may have been missed. If a symptom is missing, '
+                    'edit your description.',
             style: MataText.body(
               color: brown,
               fontSize: 13,

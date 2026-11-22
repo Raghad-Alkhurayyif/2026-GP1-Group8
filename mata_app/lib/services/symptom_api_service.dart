@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'gemini_preference.dart';
+
 class SymptomApiService {
   static const String _baseUrl = 'http://10.0.2.2:8000';
 
@@ -16,6 +18,7 @@ class SymptomApiService {
           },
           body: jsonEncode({
             'text': text,
+            'use_gemini': GeminiPreference.enabled.value,
           }),
         )
         .timeout(const Duration(seconds: 15));

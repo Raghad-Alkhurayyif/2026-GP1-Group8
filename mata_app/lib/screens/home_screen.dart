@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/analysis_notice.dart';
+import '../services/gemini_preference.dart';
 import '../services/symptom_api_service.dart';
 import '../theme/mata_theme.dart';
 import '../widgets/analysis_notice_card.dart';
@@ -852,36 +853,93 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
 }
 
 /// Tells the user, before an assessment, what is stored and what leaves the
-/// app (NFR-2).
-class _PrivacyNote extends StatelessWidget {
+/// app (NFR-2), and lets them decline sending their words to Gemini.
+class _PrivacyNote extends StatefulWidget {
   const _PrivacyNote();
 
   @override
+  State<_PrivacyNote> createState() => _PrivacyNoteState();
+}
+
+class _PrivacyNoteState extends State<_PrivacyNote> {
+  @override
+  void initState() {
+    super.initState();
+    GeminiPreference.load();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 1),
-          child: Icon(
-            Icons.lock_outline_rounded,
-            color: MataColors.hint,
-            size: 15,
-          ),
-        ),
-        const SizedBox(width: 7),
-        Expanded(
-          child: Text(
-            'Saved to your account. If any part isn\'t recognized, '
-            'your description is sent securely to Google Gemini.',
-            style: MataText.body(
-              color: MataColors.hint,
-              fontSize: 12,
-              height: 1.4,
+    final style = MataText.body(
+      color: MataColors.hint,
+      fontSize: 12,
+      height: 1.4,
+    );
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: GeminiPreference.enabled,
+      builder: (context, useGemini, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 1),
+                  child: Icon(
+                    Icons.lock_outline_rounded,
+                    color: MataColors.hint,
+                    size: 15,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    useGemini
+                        ? 'Saved to your account. If any part isn\'t '
+                            'recognized, your description is sent securely to '
+                            'Google Gemini.'
+                        : 'Saved to your account. Nothing is sent to Gemini, '
+                            'so less common wording may be missed.',
+                    style: style,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const SizedBox(width: 22),
+                Expanded(
+                  child: Text(
+                    'Use Google Gemini',
+                    style: style.copyWith(
+                      color: MataColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 28,
+                  child: FittedBox(
+                    child: Switch(
+                      value: useGemini,
+                      onChanged: GeminiPreference.set,
+                      activeThumbColor: MataColors.softWhite,
+                      activeTrackColor: MataColors.brown,
+                      inactiveThumbColor: MataColors.softWhite,
+                      inactiveTrackColor: MataColors.sand,
+                      trackOutlineColor:
+                          WidgetStateProperty.all(Colors.transparent),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
