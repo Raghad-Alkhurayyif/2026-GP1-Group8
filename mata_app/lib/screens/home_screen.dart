@@ -233,7 +233,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   else
                     SizedBox(
-                      height: 46,
+                      // Taller for the privacy note and its Gemini switch.
+                      height: _showError ? 46 : 80,
                       child: _showError
                           ? Padding(
                               padding: const EdgeInsets.only(top: 12, left: 4),
