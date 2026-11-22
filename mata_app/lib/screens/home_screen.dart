@@ -162,6 +162,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 1.6,
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Leave out names, phone numbers, and other personal '
+                    'details.',
+                    style: MataText.body(
+                      color: MataColors.sos,
+                      fontSize: 14.5,
+                      height: 1.6,
+                    ),
+                  ),
                   const SizedBox(height: 22),
                   SizedBox(
                     height: _notice == null ? 230 : 178,

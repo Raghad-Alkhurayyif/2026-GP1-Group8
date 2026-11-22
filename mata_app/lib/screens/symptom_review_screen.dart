@@ -495,6 +495,19 @@ class _SymptomReviewScreenState extends State<SymptomReviewScreen> {
             height: 1.55,
           ),
         ),
+        if (widget.extractionResult['degraded'] == true) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Part of our analysis was unavailable, so less common wording '
+            'may have been missed. If a symptom is missing, edit your '
+            'description.',
+            style: MataText.body(
+              color: brown,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+        ],
       ],
     );
   }

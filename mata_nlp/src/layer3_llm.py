@@ -63,6 +63,7 @@ Owner: Raghad (prompt, model, validation); Aljoury (contract, vocabulary).
 import json
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from vocab_utils import FAMILY_GENERIC
@@ -75,7 +76,14 @@ ROOT = Path(__file__).resolve().parent.parent
 # level the same model averaged over 7 s a call and often hit the timeout.
 MODEL_NAME = "gemini-3.5-flash"
 THINKING_LEVEL = "LOW"
+# The Gemini API rejects a deadline below 10 s, and the SDK applies it to
+# each network step rather than to the whole call. The whole call is
+# therefore also capped, at CALL_DEADLINE_SECONDS in total and with no retry,
+# in `Layer3.extend`: a slow or failed call falls back to the lexicon result.
+# 8 s leaves 2 s of NFR-1's 10 s maximum for saving the description, the
+# network, and the age rules.
 TIMEOUT_SECONDS = 10
+CALL_DEADLINE_SECONDS = 8
 MAX_UNMATCHED_CHARS = 2000
 # Fixed so a reported number can be reproduced. See `generate` below for what
 # went wrong without it. Pinning these does NOT make the API deterministic -
@@ -227,6 +235,31 @@ def parse_response(response_text, user_text, vocabulary):
     return {"matches": matches, "ambiguous": ambiguous, "rejected": rejected}
 
 
+# Personal details a user may type into a symptom description. They are
+# replaced before the text leaves the server, because no symptom depends on
+# them. Names cannot be found reliably this way and are not attempted.
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+_URL = re.compile(r"(?:https?://|www\.)\S+", re.IGNORECASE)
+# Seven or more digits, allowing spaces, dashes and brackets between them:
+# phone and ID numbers. Symptom numbers ("38.5", "3 days", "120/80") are
+# shorter or broken by other characters, so they are kept.
+_LONG_NUMBER = re.compile(r"(?<![\w.])\+?\d(?:[\s\-()]*\d){6,}(?![\w.])")
+
+
+def remove_personal_details(text):
+    text = _EMAIL.sub("[removed]", text)
+    text = _URL.sub("[removed]", text)
+    return _LONG_NUMBER.sub("[removed]", text)
+
+
+_POOL = ThreadPoolExecutor(max_workers=4)
+
+
+def _within_deadline(fn, *args, seconds=CALL_DEADLINE_SECONDS):
+    """Run `fn`, giving up after `seconds` in total (raises TimeoutError)."""
+    return _POOL.submit(fn, *args).result(timeout=seconds)
+
+
 class Layer3:
     """
     The LLM fallback. `client` is injectable: anything with
@@ -283,7 +316,7 @@ class Layer3:
             api_key=self._api_key,
             http_options=types.HttpOptions(
                 timeout=TIMEOUT_SECONDS * 1000,
-                retry_options=types.HttpRetryOptions(attempts=2),
+                retry_options=types.HttpRetryOptions(attempts=1),
             ),
         )
 
@@ -344,9 +377,10 @@ class Layer3:
         found = ({s["column"] for s in result.get("symptoms", [])}
                  | {n["column"] for n in result.get("negated", [])})
         try:
-            raw = self.client(
+            raw = _within_deadline(
+                self.client,
                 build_system_instruction(self.vocabulary, found),
-                text[:MAX_UNMATCHED_CHARS])
+                remove_personal_details(text[:MAX_UNMATCHED_CHARS]))
         except Exception as exc:
             self.reason = f"{type(exc).__name__}: {exc}"
             result.setdefault("layers_run", []).append("llm:failed")
