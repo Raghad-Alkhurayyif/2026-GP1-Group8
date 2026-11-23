@@ -102,15 +102,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           // the same twilight as the welcome screen, the horizon drawn higher
           const Positioned.fill(child: RoadScene(mood: RoadMood.signIn)),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
-              child: MataBackButton(
-                night: true,
-                onTap: () => Navigator.of(context).maybePop(),
-              ),
-            ),
-          ),
-          SafeArea(
             child: Align(
               alignment: Alignment.bottomCenter,
               child: SingleChildScrollView(
@@ -230,6 +221,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                 ),
+              ),
+            ),
+          ),
+          // Drawn after the form so it stays on top: once error messages or
+          // the keyboard make the form scroll, its scroll area covers the
+          // whole screen and would otherwise take this button's taps.
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+              child: MataBackButton(
+                night: true,
+                onTap: () => Navigator.of(context).maybePop(),
               ),
             ),
           ),
