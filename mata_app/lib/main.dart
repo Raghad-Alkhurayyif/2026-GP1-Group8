@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/welcome_screen.dart';
+import 'theme/mata_page_transitions.dart';
+import 'theme/mata_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,9 +21,17 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: AuthGate(),
+      theme: ThemeData(
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: {
+            ...const PageTransitionsTheme().builders,
+            TargetPlatform.android: const MataPageTransitionsBuilder(),
+          },
+        ),
+      ),
+      home: const AuthGate(),
     );
   }
 }
@@ -43,6 +53,19 @@ class _AuthGateState extends State<AuthGate> {
   void initState() {
     super.initState();
     _sessionCheck = _checkStoredSession();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ready before the first slide, which shows a still picture of the next
+    // screen and must not catch it before its artwork has loaded.
+    precacheImage(const AssetImage('assets/images/background.png'), context);
+    precacheImage(
+      const AssetImage('assets/images/mata_logo_corner.png'),
+      context,
+    );
+    MataText.preload();
   }
 
   Future<void> _checkStoredSession() async {

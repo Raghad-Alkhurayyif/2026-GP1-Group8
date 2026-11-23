@@ -19,6 +19,20 @@ class MataColors {
 }
 
 class MataText {
+  /// Starts loading every weight the app uses, so no screen is first shown,
+  /// or caught in a slide, before its text has its font.
+  static void preload() {
+    for (final weight in const [
+      FontWeight.w400,
+      FontWeight.w500,
+      FontWeight.w600,
+      FontWeight.w700,
+    ]) {
+      display(fontWeight: weight);
+      body(fontWeight: weight);
+    }
+  }
+
   /// Headings: Reem Kufi, as in the original app.
   static TextStyle display({
     double fontSize = 27,
