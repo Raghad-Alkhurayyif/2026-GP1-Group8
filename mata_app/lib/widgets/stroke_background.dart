@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
+
+import 'frame_clock.dart';
 
 /// The background for the screens inside the app: the original artwork, where
 /// the logo's stroke returns across the screen, with a touch of light along its
@@ -16,24 +17,29 @@ class StrokeBackground extends StatefulWidget {
   State<StrokeBackground> createState() => _StrokeBackgroundState();
 }
 
-class _StrokeBackgroundState extends State<StrokeBackground>
-    with SingleTickerProviderStateMixin {
+class _StrokeBackgroundState extends State<StrokeBackground> {
   final ValueNotifier<double> _time = ValueNotifier(0);
-  Ticker? _ticker;
+
+  // The glints fade in and out over seconds, so 30 frames a second is
+  // plenty, and they rest while another screen covers this one.
+  late final FrameClock _clock = FrameClock(
+    fps: 30,
+    onFrame: (elapsed) => _time.value = elapsed.inMicroseconds / 1e6,
+  );
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.glints) {
-      _ticker = createTicker((elapsed) {
-        _time.value = elapsed.inMicroseconds / 1e6;
-      })..start();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.glints && TickerMode.valuesOf(context).enabled) {
+      _clock.start();
+    } else {
+      _clock.stop();
     }
   }
 
   @override
   void dispose() {
-    _ticker?.dispose();
+    _clock.dispose();
     _time.dispose();
     super.dispose();
   }

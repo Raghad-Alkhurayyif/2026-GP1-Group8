@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import 'frame_clock.dart';
+
 /// How the guiding path looks on a given screen.
 class RoadMood {
   const RoadMood({
@@ -12,6 +14,7 @@ class RoadMood {
     required this.curve,
     required this.hills,
     this.lamps = false,
+    this.fps,
   });
 
   /// 0 is dusk, 0.5 a warm twilight, 1 full morning light.
@@ -25,6 +28,10 @@ class RoadMood {
 
   /// Whether the orbs above the path light up one by one (analyzing).
   final bool lamps;
+
+  /// A frame-rate limit for screens where the path is slow or sits behind a
+  /// panel; left out, the path moves on every screen refresh.
+  final int? fps;
 
   static const RoadMood welcome = RoadMood(
     sky: .5,
@@ -40,6 +47,7 @@ class RoadMood {
     speed: .05,
     curve: 1,
     hills: 0,
+    fps: 30,
   );
 
   /// SOS: a darker dusk with the path low and almost still, so nothing
@@ -50,6 +58,7 @@ class RoadMood {
     speed: .02,
     curve: 1,
     hills: 0,
+    fps: 30,
   );
 
   static const RoadMood analyzing = RoadMood(
@@ -75,14 +84,29 @@ class RoadScene extends StatefulWidget {
 
 class _RoadSceneState extends State<RoadScene>
     with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
+  Ticker? _ticker;
+  FrameClock? _clock;
   final _RoadState _state = _RoadState();
   Duration _last = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_tick)..start();
+    final fps = widget.mood.fps;
+    if (fps == null) {
+      _ticker = createTicker(_tick)..start();
+    } else {
+      _clock = FrameClock(fps: fps, onFrame: _tick);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Like the ticker, the limited clock rests while the screen is covered.
+    if (_clock != null) {
+      TickerMode.valuesOf(context).enabled ? _clock!.start() : _clock!.stop();
+    }
   }
 
   void _tick(Duration elapsed) {
@@ -93,7 +117,8 @@ class _RoadSceneState extends State<RoadScene>
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _ticker?.dispose();
+    _clock?.dispose();
     _state.dispose();
     super.dispose();
   }
