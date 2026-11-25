@@ -158,14 +158,34 @@ class _EmergencyContactFormScreenState
     });
   }
 
-  Future<void> _save() async {
+   Future<void> _save() async {
     if (_saving) return;
+
     final country = _countryCodes[_country?.countryCode];
-    if (country == null) {
-      setState(() => _phoneError = 'Select a country first.');
-      return;
+    final nameError = _name.text.trim().isEmpty
+        ? const ContactException(ContactErrorType.emptyName).message
+        : null;
+
+    final String? phoneError;
+    if (country == null && _phone.text.trim().isEmpty) {
+      phoneError = 'Select a country and enter a mobile number.';
+    } else if (country == null) {
+      phoneError = 'Select a country first.';
+    } else if (_phone.text.trim().isEmpty) {
+      phoneError = const ContactException(ContactErrorType.emptyPhone).message;
+    } else {
+      phoneError = null;
     }
 
+    setState(() {
+      _nameError = nameError;
+      _phoneError = phoneError;
+      _formError = null;
+    });
+
+    if (nameError != null || phoneError != null || country == null) {
+      return;
+    }
     FocusScope.of(context).unfocus();
     setState(() {
       _saving = true;
